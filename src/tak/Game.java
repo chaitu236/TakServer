@@ -244,7 +244,7 @@ public class Game {
             Stack<Character> moveStack = new Stack<>();
             //move to temporary stack
             if(sqr==startSq){
-                for(int i=0;i<vals.length;i++)
+                for(int i=0;i<sum;i++)
                     moveStack.push(pop(sqr));
             }
             //flatten
