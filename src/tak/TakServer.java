@@ -28,7 +28,7 @@ public class TakServer extends Thread{
                 System.out.println("waiting for connection\n");
                 Socket socket = ssocket.accept();
                 System.out.println("got connection");
-                ClientConnection cc = new ClientConnection(socket);
+                Client cc = new Client(socket);
                 cc.start();
             }
         } catch (IOException ex) {

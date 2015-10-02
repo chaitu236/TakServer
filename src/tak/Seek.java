@@ -6,7 +6,10 @@
 package tak;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import static tak.Client.clientConnections;
 import static tak.Game.DEFAULT_SIZE;
 
 /**
@@ -14,15 +17,47 @@ import static tak.Game.DEFAULT_SIZE;
  * @author chaitu
  */
 public class Seek {
-    ClientConnection client;
+    Client client;
     int boardSize;
     int no;
     
     static int seekNo=0;
     
     static Map<Integer, Seek> seeks = new HashMap<>();
+    static Set<Client> seekListeners = new HashSet<>();
     
-    Seek(ClientConnection c, int b) {
+    static Seek newSeek(Client c, int b) {
+        Seek sk = new Seek(c, b);
+        Seek.seeks.put(sk.no, sk);
+        updateListeners();
+        return sk;
+    }
+    
+    static void removeSeek(int b) {
+        Seek.seeks.remove(b);
+        updateListeners();
+    }
+    
+    static void updateListeners() {
+        new Thread() {
+            @Override
+            public void run() {
+                for (Client cc : seekListeners) {
+                    cc.send("List " + Seek.seeks.toString());
+                }
+            }
+        }.start();
+    }
+    
+    static void registerListener(Client c) {
+        seekListeners.add(c);
+    }
+    
+    static void unregisterListener(Client c) {
+        seekListeners.remove(c);
+    }
+    
+    Seek(Client c, int b) {
         client = c;
         no = ++seekNo;
         
