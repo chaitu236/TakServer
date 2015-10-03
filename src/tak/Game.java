@@ -193,12 +193,11 @@ public class Game {
         if(c != stackController(startSq))
             return new Status("You don't control stack", false);
         
-        //sum of all vals should be less than or equal to boardSize and stack
-        //ssize
-        int sum=0;
+        //carry size should be less than or equal to boardSize and stack size
+        int carrySize=0;
         for(int v:vals)
-            sum+=v;
-        if(sum>boardSize || sum>startSq.size())
+            carrySize+=v;
+        if(carrySize>boardSize || carrySize>startSq.size())
             return new Status("Invalid move", false);
         
         //length of vals should be one less than no. of squares involved
@@ -252,7 +251,7 @@ public class Game {
             
             //move to temporary stack
             if(sqr==startSq){
-                for(int i=0;i<sum;i++)
+                for(int i=0;i<carrySize;i++)
                     moveStack.push(pop(sqr));
             }
             //flatten
