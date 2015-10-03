@@ -21,6 +21,10 @@ public class Game {
     int no;
     int boardSize;
     int moveCount;
+    int capstonesCount;
+    int whiteCapstones;
+    int blackCapstones;
+    
     ArrayList<Character>[][] board;
 
     static int DEFAULT_SIZE = 4;
@@ -35,11 +39,20 @@ public class Game {
         white = c1;
         black = c2;
 
-        if (b != 4 && b != 5 && b != 6 && b != 8) {
+        if (b < 4 || b > 8) {
             b = DEFAULT_SIZE;
         }
 
         boardSize = b;
+        switch(b) {
+            case 4: capstonesCount = 0; break;
+            case 5:
+            case 6: capstonesCount = 1; break;
+            case 7:
+            case 8: capstonesCount = 2; break;
+        }
+        whiteCapstones = blackCapstones = capstonesCount;
+        
         moveCount = 0;
         board = new ArrayList[boardSize][boardSize];
         no = ++gameNo;
@@ -105,8 +118,8 @@ public class Game {
     
     Status placeMove(Client c, char file, int rank, boolean capstone,
             boolean wall) {
-        System.out.println("file = "+file+" rank="+rank+" capstone="
-                +capstone+" wall="+wall);
+        //System.out.println("file = "+file+" rank="+rank+" capstone="
+          //      +capstone+" wall="+wall);
         ArrayList sq = getSquare(file, rank);
         if(!turnOf(c))
             return new Status("Not your turn", false);
@@ -133,6 +146,16 @@ public class Game {
                 ch = Character.isUpperCase(ch)?Character.toLowerCase(ch):
                         Character.toUpperCase(ch);
             
+            //check if enough capstones, and decrement if there are
+            if(isCapstone(ch)) {
+                int caps = isWhitesTurn()?whiteCapstones:blackCapstones;
+                if(caps==0)
+                    return new Status("You're out of capstones", false);
+                if(isWhitesTurn())
+                    whiteCapstones--;
+                else
+                    blackCapstones--;
+            }
             sq.add(ch);
             moveCount++;
             return new Status(true);
@@ -168,9 +191,7 @@ public class Game {
         return x>0?x:-x;
     }
     
-    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {
-        System.out.println("Move move "+f1+" "+r1+" "+f2+" "+r2+" "+Arrays.toString(vals));
-        
+    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {        
         //alternate turns
         if(!turnOf(c))
             return new Status("Not your turn", false);

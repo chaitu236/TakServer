@@ -117,6 +117,7 @@ public class Client extends Thread {
         try {
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
+                System.out.println("read "+temp);
                 
                 Matcher m;
 
@@ -175,7 +176,6 @@ public class Client extends Thread {
                     }
                     //Handle move move
                     else if (game!=null && (m = movePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
-                        System.out.println("move move "+m.group(6));
                         String args[] = m.group(6).split(" ");
                         int argsint[] = new int[args.length-1];
                         for(int i=1;i<args.length;i++)
