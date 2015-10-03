@@ -142,6 +142,9 @@ public class Game {
     }
     
     char topOfStack(ArrayList<Character> stack) {
+        if(stack.size()==0)
+            return 0;
+        
         return stack.get(stack.size()-1);
     }
     
@@ -161,10 +164,13 @@ public class Game {
         return Character.toLowerCase(c) == FLAT;
     }
     
+    static int abs(int x) {
+        return x>0?x:-x;
+    }
+    
     Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {
         System.out.println("Move move "+f1+" "+r1+" "+f2+" "+r2+" "+Arrays.toString(vals));
-        for(int i:vals)
-            System.out.println(" "+i);
+        
         //alternate turns
         if(!turnOf(c))
             return new Status("Not your turn", false);
@@ -176,7 +182,7 @@ public class Game {
         //moves should be horizontal or vertical
         if(f1!=f2 && r1!=r2)
             return new Status("Move should be in straight line", false);
-                
+        
         ArrayList startSq = getSquare(f1, r1);
         ArrayList endSq = getSquare(f2, r2);
         //bounds checking of squares
@@ -195,15 +201,16 @@ public class Game {
         if(sum>boardSize || sum>startSq.size())
             return new Status("Invalid move", false);
         
-        //should move atleast 2 squares
-        if(vals.length < 2)
-            return new Status("Move atleast 2 squares", false);
+        //length of vals should be one less than no. of squares involved
+        int num = (f1==f2)?abs(r1-r2):abs(f1-f2);
+        if(vals.length != num)
+            return new Status("Invalid move.", false);
         
         //first square should not be negative
-        if(vals[0]<0)
-            return new Status("Invalid input", false);
+        /*if(vals[0]<0)
+            return new Status("Invalid input", false);*/
         //all other squares should be greater than 0
-        for(int i=1;i<vals.length;i++)
+        for(int i=0;i<vals.length;i++)
             if(vals[i]<1)
                 return new Status("Should place atleast one tile in rest of"
                         + " the squares", false);
@@ -236,12 +243,13 @@ public class Game {
         
         //do the actual moving of stack
         sqIt.reset();
-        int count=0;
-        for(ArrayList<Character> sqr=sqIt.next();sqr!=endSq;
+        int count=-1;
+        Stack<Character> moveStack = new Stack<>();
+        
+        for(ArrayList<Character> sqr=sqIt.next();sqr!=null;
                 sqr=sqIt.next(),count++){
             assert(count<vals.length);
             
-            Stack<Character> moveStack = new Stack<>();
             //move to temporary stack
             if(sqr==startSq){
                 for(int i=0;i<sum;i++)
