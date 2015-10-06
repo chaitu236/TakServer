@@ -34,7 +34,7 @@ public class Client extends Thread {
     Game game = null;
     Seek seek = null;
 
-    String placeString = "Game#(\\d+) P ([A-Z])(\\d)(\\sC)?(\\sW)?";
+    String placeString = "Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
     Pattern placePattern;
 
     String moveString = "Game#(\\d+) M ([A-Z])(\\d) ([A-Z])(\\d)(( \\d)+)";
@@ -115,6 +115,7 @@ public class Client extends Thread {
     public void run() {
         String temp;
         try {
+            send("welcome!");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 System.out.println("read "+temp);
@@ -156,8 +157,9 @@ public class Client extends Thread {
                             game = new Game(this, otherClient, sz);
                             otherClient.game = game;
                             sendOK();
-                            send("Game Start " + game.no);
-                            otherClient.send("Game Start " + game.no);
+                            String msg = "Game Start " + game.no +" "+sz+" "+game.white.name+" vs "+game.black.name;
+                            send(msg+" "+((game.white==this)?"white":"black"));
+                            otherClient.send(msg+" "+((game.white==otherClient)?"white":"black"));
                         } else {
                             sendNOK();
                         }
@@ -167,8 +169,10 @@ public class Client extends Thread {
                         Status st = game.placeMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4) != null, m.group(5)!=null);
                         if(st.isOk()){
                             sendOK();
-                            game.white.send(game.toString());
-                            game.black.send(game.toString());
+                            //game.white.send(game.toString());
+                            //game.black.send(game.toString());
+                            Client other = (game.white==this)?game.black:game.white;
+                            other.send(temp);
                         } else {
                             sendNOK();
                             send("Error:"+st.msg());
@@ -183,8 +187,10 @@ public class Client extends Thread {
                         Status st = game.moveMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4).charAt(0), Integer.parseInt(m.group(5)), argsint);
                         if(st.isOk()){
                             sendOK();
-                            game.white.send(game.toString());
-                            game.black.send(game.toString());
+                            //game.white.send(game.toString());
+                            //game.black.send(game.toString());
+                            Client other = (game.white==this)?game.black:game.white;
+                            other.send(temp);
                         } else {
                             sendNOK();
                             send("Error:"+st.msg());
