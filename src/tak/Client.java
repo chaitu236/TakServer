@@ -191,6 +191,12 @@ public class Client extends Thread {
                             //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
+                            
+                            if(game.gameOver){
+                                send("Game Over " + game.no);
+                                other.send("Game Over "+game.no);
+                                game = null;
+                            }
                         } else {
                             sendNOK();
                             send("Error:"+st.msg());

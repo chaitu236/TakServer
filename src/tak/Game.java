@@ -21,9 +21,13 @@ public class Game {
     int no;
     int boardSize;
     int moveCount;
-    int capstonesCount;
     int whiteCapstones;
     int blackCapstones;
+    
+    int whiteTilesCount;
+    int blackTilesCount;
+    
+    boolean gameOver;
     
     ArrayList<Character>[][] board;
 
@@ -44,18 +48,22 @@ public class Game {
         }
 
         boardSize = b;
+        int capstonesCount=0;
+        int tilesCount=0;
         switch(b) {
-            case 4: capstonesCount = 0; break;
-            case 5:
-            case 6: capstonesCount = 1; break;
-            case 7:
-            case 8: capstonesCount = 2; break;
+            case 4: capstonesCount = 0; tilesCount = 15; break;
+            case 5: capstonesCount = 1; tilesCount = 20; break;
+            case 6: capstonesCount = 1; tilesCount = 30; break;
+            case 7: capstonesCount = 2; tilesCount = 40; break;
+            case 8: capstonesCount = 2; tilesCount = 50; break;
         }
         whiteCapstones = blackCapstones = capstonesCount;
+        whiteTilesCount = blackTilesCount = tilesCount;
         
         moveCount = 0;
         board = new ArrayList[boardSize][boardSize];
         no = ++gameNo;
+        gameOver = false;
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
@@ -116,6 +124,10 @@ public class Game {
         return false;
     }
     
+    void outOfPieces() {
+        System.out.println("out of pieces. TODO");
+        gameOver = true;
+    }
     Status placeMove(Client c, char file, int rank, boolean capstone,
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
@@ -156,6 +168,18 @@ public class Game {
                 else
                     blackCapstones--;
             }
+            if(isWhitesTurn()) {
+                whiteTilesCount--;
+                if(whiteTilesCount==0 && whiteCapstones==0) {
+                    outOfPieces();
+                }
+            } else {
+                blackTilesCount--;
+                if(blackTilesCount==0 && blackCapstones == 0){
+                    outOfPieces();
+                }
+            }
+            
             sq.add(ch);
             moveCount++;
             return new Status(true);
@@ -165,7 +189,7 @@ public class Game {
     }
     
     char topOfStack(ArrayList<Character> stack) {
-        if(stack.size()==0)
+        if(stack.isEmpty())
             return 0;
         
         return stack.get(stack.size()-1);
