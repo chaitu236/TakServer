@@ -117,15 +117,16 @@ public class Game {
     
     private boolean turnOf(Client c) {
         boolean whiteTurn = isWhitesTurn();
-        if(c == white && whiteTurn)
-            return true;
-        if(c == black && !whiteTurn)
-            return true;
-        return false;
+//        if(c == white && whiteTurn)
+//            return true;
+//        if(c == black && !whiteTurn)
+//            return true;
+//        return false;
+        return (c==white)==whiteTurn;
     }
     
     void outOfPieces() {
-        System.out.println("out of pieces. TODO");
+        System.out.println("out of pieces.");
         gameOver = true;
     }
     Status placeMove(Client c, char file, int rank, boolean capstone,
@@ -314,9 +315,20 @@ public class Game {
             }
         }
         moveCount++;
+        checkOutOfSquares();
         return new Status(true);
     }
     
+    void checkOutOfSquares() {
+        for(int i=0;i<this.boardSize;i++){
+            for(int j=0;j<this.boardSize;j++){
+                if(board[i][j].size()>0)
+                    return;
+            }
+        }
+        System.out.println("Out of squares");
+        gameOver = true;
+    }
     void clientQuit(Client c) {
         Client otherClient = (c==white)?black:white;
         otherClient.game = null;

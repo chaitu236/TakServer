@@ -61,7 +61,7 @@ public class Seek {
         client = c;
         no = ++seekNo;
         
-        if(b!=4 && b!=5 && b!=6 && b!=8)
+        if (b < 4 || b > 8)
             b = DEFAULT_SIZE;
         boardSize = b;
     }
