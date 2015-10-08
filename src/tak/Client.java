@@ -126,23 +126,26 @@ public class Client extends Thread {
                 if (name == null) {
                     if ((m = namePattern.matcher(temp)).find()) {
                         String tname = m.group(1).trim();
-                        if (!names.contains(tname)) {
-                            name = tname;
-                            names.add(tname);
-                            sendOK();
-                        } else
-                            send("Name?");
+                        synchronized(names) {
+                            if (!names.contains(tname)) {
+                                name = tname;
+                                names.add(tname);
+                                sendOK();
+                            } else
+                                send("Name?");
+                        }
                     } else
                         send("Name?");
                 } else {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
                         sendOK();
-                        send("List " + Seek.seeks.toString());
+                        //send("List " + Seek.seeks.toString());
+                        Seek.sendListTo(this);
                     } //Seek a game
                     else if ((m = seekPattern.matcher(temp)).find()) {
                         if (seek != null) {
-                            Seek.seeks.remove(seek.no);
+                            Seek.removeSeek(seek.no);
                         }
                         seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
                         sendOK();
@@ -196,8 +199,8 @@ public class Client extends Thread {
                             other.send(temp);
                             
                             if(game.gameOver){
-                                send("Game Over " + game.no);
-                                other.send("Game Over "+game.no);
+                                send("Game#"+game.no+" Over " + game.no);
+                                other.send("Game#"+game.no+"+ Over "+game.no);
                                 game = null;
                             }
                         } else {

@@ -332,7 +332,7 @@ public class Game {
     void clientQuit(Client c) {
         Client otherClient = (c==white)?black:white;
         otherClient.game = null;
-        otherClient.send("Game#"+no+" stopped. "+c.name+" quit");
+        otherClient.send("Game#"+no+" Abandoned. "+c.name+" quit");
     }
     
     class SquareIterator {

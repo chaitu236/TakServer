@@ -29,24 +29,30 @@ public class Seek {
     static Seek newSeek(Client c, int b) {
         Seek sk = new Seek(c, b);
         Seek.seeks.put(sk.no, sk);
-        updateListeners();
+        updateListeners("new "+sk.toString());
         return sk;
     }
     
     static void removeSeek(int b) {
+        Seek sk=Seek.seeks.get(b);
         Seek.seeks.remove(b);
-        updateListeners();
+        updateListeners("remove "+sk.toString());
     }
     
-    static void updateListeners() {
+    static void updateListeners(final String st) {
         new Thread() {
             @Override
             public void run() {
                 for (Client cc : seekListeners) {
-                    cc.send("List " + Seek.seeks.toString());
+                    cc.send("Seek " + st);
                 }
             }
         }.start();
+    }
+    
+    static void sendListTo(Client c) {
+        for(Integer no: seeks.keySet())
+            c.send("Seek new "+seeks.get(no));
     }
     
     static void registerListener(Client c) {
