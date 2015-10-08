@@ -116,6 +116,7 @@ public class Client extends Thread {
         String temp;
         try {
             send("welcome!");
+            send("Name?");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 System.out.println("read "+temp);
@@ -129,8 +130,10 @@ public class Client extends Thread {
                             name = tname;
                             names.add(tname);
                             sendOK();
-                        }
-                    }
+                        } else
+                            send("Name?");
+                    } else
+                        send("Name?");
                 } else {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
