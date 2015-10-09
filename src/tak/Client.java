@@ -131,6 +131,7 @@ public class Client extends Thread {
                                 name = tname;
                                 names.add(tname);
                                 sendOK();
+                                Seek.sendListTo(this);
                             } else
                                 send("Name?");
                         }
