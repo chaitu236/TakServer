@@ -144,14 +144,14 @@ public class Client extends Thread {
                         //send("List " + Seek.seeks.toString());
                         Seek.sendListTo(this);
                     } //Seek a game
-                    else if ((m = seekPattern.matcher(temp)).find()) {
+                    else if (game==null && (m = seekPattern.matcher(temp)).find()) {
                         if (seek != null) {
                             Seek.removeSeek(seek.no);
                         }
                         seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
                         sendOK();
                     } //Accept a seek
-                    else if ((m = acceptSeekPattern.matcher(temp)).find()) {
+                    else if (game==null && (m = acceptSeekPattern.matcher(temp)).find()) {
                         Seek sk = Seek.seeks.get(Integer.parseInt(m.group(1)));
 
                         if (sk != null && game == null && sk.client.game == null && sk!=seek) {
