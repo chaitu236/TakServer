@@ -180,6 +180,13 @@ public class Client extends Thread {
                             //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
+                            
+                            if(game.gameOver){
+                                send("Game#"+game.no+" Over " + game.no);
+                                other.send("Game#"+game.no+"+ Over "+game.no);
+                                game = null;
+                                other.game = null;
+                            }
                         } else {
                             sendNOK();
                             send("Error:"+st.msg());
@@ -203,6 +210,7 @@ public class Client extends Thread {
                                 send("Game#"+game.no+" Over " + game.no);
                                 other.send("Game#"+game.no+"+ Over "+game.no);
                                 game = null;
+                                other.game = null;
                             }
                         } else {
                             sendNOK();
@@ -218,6 +226,7 @@ public class Client extends Thread {
             }
 
             clientQuit();
+            System.out.println("disconnected");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -7,6 +7,7 @@ package tak;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Stack;
 
 /**
@@ -40,8 +41,9 @@ public class Game {
     static final char CAPSTONE='c';
 
     Game(Client c1, Client c2, int b) {
-        white = c1;
-        black = c2;
+        int rand = new Random().nextInt(99);
+        white = (rand>=50)?c1:c2;
+        black = (rand>=50)?c2:c1;
 
         if (b < 4 || b > 8) {
             b = DEFAULT_SIZE;
@@ -125,9 +127,12 @@ public class Game {
         return (c==white)==whiteTurn;
     }
     
-    void outOfPieces() {
-        System.out.println("out of pieces.");
-        gameOver = true;
+    void checkOutOfPieces() {
+        if((whiteTilesCount==0 && whiteCapstones==0) ||
+                (blackTilesCount==0 && blackCapstones==0)){
+            System.out.println("out of pieces.");
+            gameOver = true;
+        }
     }
     Status placeMove(Client c, char file, int rank, boolean capstone,
             boolean wall) {
@@ -168,21 +173,19 @@ public class Game {
                     whiteCapstones--;
                 else
                     blackCapstones--;
-            }
-            if(isWhitesTurn()) {
-                whiteTilesCount--;
-                if(whiteTilesCount==0 && whiteCapstones==0) {
-                    outOfPieces();
-                }
             } else {
-                blackTilesCount--;
-                if(blackTilesCount==0 && blackCapstones == 0){
-                    outOfPieces();
-                }
+                if(isWhitesTurn())
+                    whiteTilesCount--;
+                else
+                    blackTilesCount--;
             }
             
             sq.add(ch);
             moveCount++;
+            
+            checkOutOfPieces();
+            checkOutOfSquares();
+            checkRoadWin();
             return new Status(true);
         } else {
             return new Status("Square not empty", false);
@@ -210,6 +213,14 @@ public class Game {
     
     boolean isFlat(char c) {
         return Character.toLowerCase(c) == FLAT;
+    }
+    
+    boolean isBlack(char c) {
+        return (c==FLAT)||(c==WALL)||(c==CAPSTONE);
+    }
+    
+    boolean isWhite(char c) {
+        return !isBlack(c);
     }
     
     static int abs(int x) {
@@ -316,6 +327,7 @@ public class Game {
         }
         moveCount++;
         checkOutOfSquares();
+        checkRoadWin();
         return new Status(true);
     }
     
@@ -329,6 +341,31 @@ public class Game {
         System.out.println("Out of squares");
         gameOver = true;
     }
+    
+    void checkRoadWin(boolean white) {
+//        boolean visited[][] = new boolean[this.boardSize][this.boardSize];
+//        for(int i=0;i<this.boardSize;i++)
+//            for(int j=0;j<this.boardSize;j++)
+//                visited[i][j] = false;
+//        
+//        for(int i=0;i<this.boardSize;i++){
+//            if(visited[i][0])
+//                continue;
+//            visited[i][0] = true;
+//            
+//            ArrayList<Character> al = getSquare((char)(i+'A'), white?1:boardSize);
+//            char ts = topOfStack(al);
+//            if((white?isWhite(ts):isBlack(ts)) && (isCapstone(ts) || isFlat(ts))){
+//                
+//            }
+//        }
+    }
+    
+    void checkRoadWin() {
+        checkRoadWin(true);
+        checkRoadWin(false);
+    }
+    
     void clientQuit(Client c) {
         Client otherClient = (c==white)?black:white;
         otherClient.game = null;
