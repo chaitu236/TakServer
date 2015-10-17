@@ -222,6 +222,10 @@ public class Client extends Thread {
                         sendOK();
                         send(game.toString());
                     }
+                    //Undefined
+                    else {
+                        sendNOK();
+                    }
                 }
             }
 

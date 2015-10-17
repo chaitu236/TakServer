@@ -30,7 +30,38 @@ public class Game {
     
     boolean gameOver;
     
-    ArrayList<Character>[][] board;
+    class Square {
+        private int file, row;
+        private ArrayList<Character> stack;
+        
+        Square() {
+            stack = new ArrayList<>();
+        }
+        boolean isEmpty() {
+            return stack.isEmpty();
+        }
+        void add(char c) {
+            stack.add(c);
+        }
+        int size() {
+            return stack.size();
+        }    
+        char pop() {
+            if(stack.size() > 0) {
+                char ret = topOfStack();
+                stack.remove(stack.size()-1);
+                return ret;
+            }
+            return 0;
+        }
+        char topOfStack() {
+            if(stack.isEmpty())
+                return 0;
+
+            return stack.get(stack.size()-1);
+        }
+    }
+    Square[][] board;
 
     static int DEFAULT_SIZE = 4;
 
@@ -63,13 +94,15 @@ public class Game {
         whiteTilesCount = blackTilesCount = tilesCount;
         
         moveCount = 0;
-        board = new ArrayList[boardSize][boardSize];
+        board = new Square[boardSize][boardSize];
         no = ++gameNo;
         gameOver = false;
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
-                board[i][j] = new ArrayList();
+                Square sq = board[i][j] = new Square();
+                sq.row = b - i;
+                sq.file = j;
             }
         }
     }
@@ -98,19 +131,10 @@ public class Game {
         return fl<boardSize && fl>=0 && rk<boardSize && rk>=0;
     }
     
-    private ArrayList getSquare(char file, int rank) {
+    private Square getSquare(char file, int rank) {
         if(!boundsCheck(file, rank))
             return null;
         return board[rank-1][file-'A'];
-    }
-    
-    private char pop(ArrayList<Character> stack) {
-        if(stack.size() > 0) {
-            char ret = topOfStack(stack);
-            stack.remove(stack.size()-1);
-            return ret;
-        }
-        return 0;
     }
     
     private boolean isWhitesTurn() {
@@ -119,11 +143,6 @@ public class Game {
     
     private boolean turnOf(Client c) {
         boolean whiteTurn = isWhitesTurn();
-//        if(c == white && whiteTurn)
-//            return true;
-//        if(c == black && !whiteTurn)
-//            return true;
-//        return false;
         return (c==white)==whiteTurn;
     }
     
@@ -138,7 +157,7 @@ public class Game {
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
           //      +capstone+" wall="+wall);
-        ArrayList sq = getSquare(file, rank);
+        Square sq = getSquare(file, rank);
         if(!turnOf(c))
             return new Status("Not your turn", false);
         
@@ -192,15 +211,8 @@ public class Game {
         }
     }
     
-    char topOfStack(ArrayList<Character> stack) {
-        if(stack.isEmpty())
-            return 0;
-        
-        return stack.get(stack.size()-1);
-    }
-    
-    Client stackController(ArrayList<Character> stack) {
-        return Character.isUpperCase(topOfStack(stack))?white:black;
+    Client stackController(Square sq) {
+        return Character.isUpperCase(sq.topOfStack())?white:black;
     }
     
     boolean isCapstone(char c) {
@@ -240,8 +252,8 @@ public class Game {
         if(f1!=f2 && r1!=r2)
             return new Status("Move should be in straight line", false);
         
-        ArrayList startSq = getSquare(f1, r1);
-        ArrayList endSq = getSquare(f2, r2);
+        Square startSq = getSquare(f1, r1);
+        Square endSq = getSquare(f2, r2);
         //bounds checking of squares
         if(startSq == null || endSq == null)
             return new Status("Out of bounds", false);
@@ -271,15 +283,15 @@ public class Game {
                 return new Status("Should place atleast one tile in rest of"
                         + " the squares", false);
         
-        char top = topOfStack(startSq);
+        char top = startSq.topOfStack();
         boolean capstone = isCapstone(top);
         
         SquareIterator sqIt = new SquareIterator(this, f1, r1, f2, r2);
         //check if none of the intermediate places are walls or capstones
-        for(ArrayList<Character> sqr=sqIt.next();sqr!=null;sqr=sqIt.next()){
+        for(Square sqr=sqIt.next();sqr!=null;sqr=sqIt.next()){
             if(sqr==startSq)
                 continue;
-            char ttop = topOfStack(sqr);
+            char ttop = sqr.topOfStack();
             
             //can't stack over capstones
             if(isCapstone(ttop))
@@ -302,19 +314,19 @@ public class Game {
         int count=-1;
         Stack<Character> moveStack = new Stack<>();
         
-        for(ArrayList<Character> sqr=sqIt.next();sqr!=null;
+        for(Square sqr=sqIt.next();sqr!=null;
                 sqr=sqIt.next(),count++){
             assert(count<vals.length);
             
             //move to temporary stack
             if(sqr==startSq){
                 for(int i=0;i<carrySize;i++)
-                    moveStack.push(pop(sqr));
+                    moveStack.push(sqr.pop());
             }
             //flatten
             else if(sqr == endSq && moveStack.size()==1 &&
-                    isCapstone(moveStack.peek()) && isWall(topOfStack(sqr))){
-                pop(sqr);
+                    isCapstone(moveStack.peek()) && isWall(sqr.topOfStack())){
+                sqr.pop();
                 sqr.add(FLAT);
                 sqr.add(moveStack.pop());
             }
@@ -343,20 +355,29 @@ public class Game {
     }
     
     void checkRoadWin(boolean white) {
-//        boolean visited[][] = new boolean[this.boardSize][this.boardSize];
-//        for(int i=0;i<this.boardSize;i++)
-//            for(int j=0;j<this.boardSize;j++)
-//                visited[i][j] = false;
-//        
-//        for(int i=0;i<this.boardSize;i++){
-//            if(visited[i][0])
-//                continue;
-//            visited[i][0] = true;
-//            
-//            ArrayList<Character> al = getSquare((char)(i+'A'), white?1:boardSize);
-//            char ts = topOfStack(al);
-//            if((white?isWhite(ts):isBlack(ts)) && (isCapstone(ts) || isFlat(ts))){
+//        class node {
+//            int lf, rf, tr, br;
+//            ArrayList<sq> s;
+//            node() {
+//                lf=rf=tr=br=0;
+//            }
+//            void add(int f, int r) {
 //                
+//            }
+//        }
+//        class sq {
+//            node nd;
+//        }
+//        node board[][] = new node[boardSize][boardSize];
+//        for(int i=0;i<boardSize;i++)
+//            for(int j=0;j<boardSize;j++)
+//                ;//board[i][j] = 0;
+//                
+//        for(int i=0;i<boardSize;i++){
+//            for(int j=0;j<boardSize;j++){
+//                ArrayList<Character> sq = getSquare((char)('A'+i), j);
+//                ArrayList<Character> lsq = getSquare((char)('A'+i-1), j);
+//                ArrayList<Character> tsq = getSquare((char)('A'+i), j-1);
 //            }
 //        }
     }
@@ -409,11 +430,11 @@ public class Game {
             }
         }
         
-        ArrayList<Character> next() {
+        Square next() {
             if(count >= total)
                 return null;
             
-            ArrayList<Character> ret = null;
+            Square ret = null;
             
             switch(direction) {
                 case EAST: ret = game.getSquare((char)(f1+count), r1); break;
