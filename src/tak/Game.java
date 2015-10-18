@@ -28,7 +28,9 @@ public class Game {
     int whiteTilesCount;
     int blackTilesCount;
     
-    boolean gameOver;
+    public enum gameS {WHITE_ROAD, BLACK_ROAD, WHITE_TILE, BLACK_TILE, DRAW,
+                        NONE};
+    gameS gameState;
     
     class Square {
         private int file, row;
@@ -104,7 +106,7 @@ public class Game {
         moveCount = 0;
         board = new Square[boardSize][boardSize];
         no = ++gameNo;
-        gameOver = false;
+        gameState = gameS.NONE;
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
@@ -153,10 +155,12 @@ public class Game {
     }
     
     void checkOutOfPieces() {
+        if(gameState!=gameS.NONE)
+            return;
         if((whiteTilesCount==0 && whiteCapstones==0) ||
                 (blackTilesCount==0 && blackCapstones==0)){
             System.out.println("out of pieces.");
-            gameOver = true;
+            findWhoWon();
         }
     }
     Status placeMove(Client c, char file, int rank, boolean capstone,
@@ -208,9 +212,9 @@ public class Game {
             sq.add(ch);
             moveCount++;
             
+            checkRoadWin();
             checkOutOfPieces();
             checkOutOfSquares();
-            checkRoadWin();
             return new Status(true);
         } else {
             return new Status("Square not empty", false);
@@ -344,12 +348,33 @@ public class Game {
             }
         }
         moveCount++;
-        checkOutOfSquares();
         checkRoadWin();
+        checkOutOfSquares();
         return new Status(true);
     }
-    
+    void findWhoWon() {
+        int blackCount=0, whiteCount=0;
+        for(int i=0;i<this.boardSize;i++){
+            for(int j=0;j<this.boardSize;j++){
+                char ch = board[i][j].topOfStack();
+                if(ch!=0 && !isWall(ch)){
+                    if(isWhite(ch))
+                        whiteCount++;
+                    else
+                        blackCount++;
+                }
+            }
+        }
+        if(whiteCount==blackCount)
+            gameState = gameS.DRAW;
+        else if(whiteCount>blackCount)
+            gameState = gameS.WHITE_TILE;
+        else
+            gameState = gameS.BLACK_TILE;
+    }
     void checkOutOfSquares() {
+        if(gameState!=gameS.NONE)
+            return;
         for(int i=0;i<this.boardSize;i++){
             for(int j=0;j<this.boardSize;j++){
                 if(board[i][j].size()>0)
@@ -357,10 +382,11 @@ public class Game {
             }
         }
         System.out.println("Out of squares");
-        gameOver = true;
+        findWhoWon();
     }
     
     void checkRoadWin() {
+        boolean whiteWin=false, blackWin=false;
         class Graph {
             private int lf, rf, tr, br;
             private ArrayList<Square> squares;
@@ -433,17 +459,13 @@ public class Game {
                     }
                 }
                 if(over) {
-//                    for(int r=0;r<boardSize;r++) {
-//                        for(int c=0;c<boardSize;c++)
-//                            System.out.print(graph[r+c*boardSize]+ " ");
-//                        System.out.println("");
-//                    }
-                    gameOver = true;
-                    return;
+                    if(isWhite(ch))
+                        whiteWin=true;
+                    else
+                        blackWin=true;
                 }
                 
                 Square tsq = getSquare((char)('A'+i), j-1+1);
-                //System.out.println("tsq "+tsq);
                 if(tsq!=null){
                     char tch = tsq.topOfStack();
                     if(tch!=0 && isWhite(ch)==isWhite(tch) && !isWall(tch)){
@@ -452,20 +474,20 @@ public class Game {
                     }
                 }
                 if(over) {
-//                    for(int r=0;r<boardSize;r++) {
-//                        for(int c=0;c<boardSize;c++)
-//                            System.out.print(graph[r+c*boardSize]+ " ");
-//                        System.out.println("");
-//                    }
-                    gameOver = true;
+                    if(isWhite(ch))
+                        whiteWin=true;
+                    else
+                        blackWin=true;
                 }
             }
         }
-//        for(int r=0;r<boardSize;r++) {
-//            for(int c=0;c<boardSize;c++)
-//                System.out.print(graph[r+c*boardSize]+ " ");
-//            System.out.println("");
-//        }
+        if(whiteWin && blackWin){
+            gameState = gameS.DRAW;
+        } else if (whiteWin) {
+            gameState = gameS.WHITE_ROAD;
+        } else if (blackWin) {
+            gameState = gameS.BLACK_ROAD;
+        }
     }
     
     void clientQuit(Client c) {

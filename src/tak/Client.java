@@ -181,9 +181,17 @@ public class Client extends Thread {
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
                             
-                            if(game.gameOver){
-                                send("Game#"+game.no+" Over " + game.no);
-                                other.send("Game#"+game.no+"+ Over "+game.no);
+                            if(game.gameState!=game.gameState.NONE){
+                                String msg = "Game#"+game.no+" Over ";
+                                switch(game.gameState) {
+                                    case DRAW: msg+= "1/2-1/2"; break;
+                                    case WHITE_ROAD: msg+="R-0"; break;
+                                    case BLACK_ROAD: msg+="0-R"; break;
+                                    case WHITE_TILE: msg+="F-0"; break;
+                                    case BLACK_TILE: msg+="0-F"; break;
+                                }
+                                send(msg);
+                                other.send(msg);
                                 game = null;
                                 other.game = null;
                             }
@@ -205,10 +213,17 @@ public class Client extends Thread {
                             //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
-                            
-                            if(game.gameOver){
-                                send("Game#"+game.no+" Over " + game.no);
-                                other.send("Game#"+game.no+"+ Over "+game.no);
+                            if(game.gameState!=game.gameState.NONE){
+                                String msg = "Game#"+game.no+" Over ";
+                                switch(game.gameState) {
+                                    case DRAW: msg+= "1/2-1/2"; break;
+                                    case WHITE_ROAD: msg+="R-0"; break;
+                                    case BLACK_ROAD: msg+="0-R"; break;
+                                    case WHITE_TILE: msg+="F-0"; break;
+                                    case BLACK_TILE: msg+="0-F"; break;
+                                }
+                                send(msg);
+                                other.send(msg);
                                 game = null;
                                 other.game = null;
                             }
