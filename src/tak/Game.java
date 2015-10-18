@@ -33,9 +33,13 @@ public class Game {
     class Square {
         private int file, row;
         private ArrayList<Character> stack;
+        int graphNo;
         
-        Square() {
+        Square(int f, int r) {
             stack = new ArrayList<>();
+            file = f;
+            row = r;
+            graphNo = -1;
         }
         boolean isEmpty() {
             return stack.isEmpty();
@@ -59,6 +63,10 @@ public class Game {
                 return 0;
 
             return stack.get(stack.size()-1);
+        }
+        @Override
+        public String toString() {
+            return ((char)(file+'A'))+""+row+" "+graphNo;
         }
     }
     Square[][] board;
@@ -100,9 +108,7 @@ public class Game {
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
-                Square sq = board[i][j] = new Square();
-                sq.row = b - i;
-                sq.file = j;
+                Square sq = board[i][j] = new Square(j, i+1);
             }
         }
     }
@@ -232,7 +238,7 @@ public class Game {
     }
     
     boolean isWhite(char c) {
-        return !isBlack(c);
+        return c!=0 && !isBlack(c);
     }
     
     static int abs(int x) {
@@ -354,37 +360,112 @@ public class Game {
         gameOver = true;
     }
     
-    void checkRoadWin(boolean white) {
-//        class node {
-//            int lf, rf, tr, br;
-//            ArrayList<sq> s;
-//            node() {
-//                lf=rf=tr=br=0;
-//            }
-//            void add(int f, int r) {
-//                
-//            }
-//        }
-//        class sq {
-//            node nd;
-//        }
-//        node board[][] = new node[boardSize][boardSize];
-//        for(int i=0;i<boardSize;i++)
-//            for(int j=0;j<boardSize;j++)
-//                ;//board[i][j] = 0;
-//                
-//        for(int i=0;i<boardSize;i++){
-//            for(int j=0;j<boardSize;j++){
-//                ArrayList<Character> sq = getSquare((char)('A'+i), j);
-//                ArrayList<Character> lsq = getSquare((char)('A'+i-1), j);
-//                ArrayList<Character> tsq = getSquare((char)('A'+i), j-1);
-//            }
-//        }
-    }
-    
     void checkRoadWin() {
-        checkRoadWin(true);
-        checkRoadWin(false);
+        class Graph {
+            private int lf, rf, tr, br;
+            private ArrayList<Square> squares;
+            int no;
+            
+            Graph(int i, int j) {
+                no = i+j*boardSize;
+                lf=rf=tr=br=1000;
+                squares = new ArrayList<>();
+            }
+            boolean add(Square sq) {
+               if(lf==1000 || sq.file < lf) lf = sq.file;
+               if(rf==1000 || sq.file > rf) rf = sq.file;
+               if(br==1000 || sq.row < br) br = sq.row-1;
+               if(tr==1000 || sq.row > tr) tr = sq.row-1;
+               
+               squares.add(sq);
+               sq.graphNo = no;
+               //System.out.println("add "+no+" "+lf+" "+rf+" "+br+" "+tr);
+               
+               return (lf==0 && rf == boardSize-1) || (br==0 && tr==boardSize-1);
+            }
+            boolean merge(Graph g) {
+                boolean ret=false;
+                //System.out.println("merge "+g.no+" with "+no);
+                for(Square sq: g.squares) {
+                    ret |= add(sq);
+                    sq.graphNo = no;
+                }
+                g.no = no;
+                //System.out.println("      "+no+" "+lf+" "+rf+" "+br+" "+tr);
+                return ret;
+            }
+            @Override
+            public String toString() {
+                StringBuilder sb=new StringBuilder();
+                sb.append("(").append(no).append(")");
+                sb.append("[");
+                for(Square sq: squares)
+                    sb.append(sq).append(" ");
+                sb.append("]");
+                return sb.toString();
+            }
+        }
+        Graph graph[] = new Graph[boardSize*boardSize];
+        for(int i=0;i<boardSize;i++)
+            for(int j=0;j<boardSize;j++)
+                graph[i+j*boardSize] = new Graph(i, j);
+                
+        for(int i=0;i<boardSize;i++){
+            for(int j=0;j<boardSize;j++){
+                Square sq = getSquare((char)('A'+i), j+1);
+                sq.graphNo = -1;
+                
+                char ch = sq.topOfStack();
+                if(ch==0 || isWall(ch))
+                    continue;
+                graph[i+j*boardSize].add(sq);
+                
+                boolean left=false;
+                boolean over=false;
+                
+                Square lsq = getSquare((char)('A'+i-1), j+1);
+                //System.out.println("lsq "+lsq);
+                if(lsq!=null){
+                    char lch = lsq.topOfStack();
+                    if(lch!=0 && isWhite(ch)==isWhite(lch) && !isWall(lch)){
+                        over = graph[lsq.graphNo].merge(graph[i+j*boardSize]);
+                        graph[i+j*boardSize] = graph[lsq.graphNo];
+                    }
+                }
+                if(over) {
+//                    for(int r=0;r<boardSize;r++) {
+//                        for(int c=0;c<boardSize;c++)
+//                            System.out.print(graph[r+c*boardSize]+ " ");
+//                        System.out.println("");
+//                    }
+                    gameOver = true;
+                    return;
+                }
+                
+                Square tsq = getSquare((char)('A'+i), j-1+1);
+                //System.out.println("tsq "+tsq);
+                if(tsq!=null){
+                    char tch = tsq.topOfStack();
+                    if(tch!=0 && isWhite(ch)==isWhite(tch) && !isWall(tch)){
+                        over = graph[tsq.graphNo].merge(graph[i+j*boardSize]);
+                        graph[i+j*boardSize] = graph[tsq.graphNo];
+                    }
+                }
+                if(over) {
+//                    for(int r=0;r<boardSize;r++) {
+//                        for(int c=0;c<boardSize;c++)
+//                            System.out.print(graph[r+c*boardSize]+ " ");
+//                        System.out.println("");
+//                    }
+                    gameOver = true;
+                }
+            }
+        }
+//        for(int r=0;r<boardSize;r++) {
+//            for(int c=0;c<boardSize;c++)
+//                System.out.print(graph[r+c*boardSize]+ " ");
+//            System.out.println("");
+//        }
     }
     
     void clientQuit(Client c) {
