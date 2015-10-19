@@ -57,7 +57,6 @@ public class Client extends Thread {
     
     Client(Socket socket) {
         this.socket = socket;
-        names = new HashSet<>();
 
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
@@ -116,7 +115,7 @@ public class Client extends Thread {
         String temp;
         try {
             send("welcome!");
-            send("Name?");
+            send("Name? "+"Enter your name (minimum 4 chars) and only a-z");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 System.out.println("read "+temp);
@@ -130,13 +129,13 @@ public class Client extends Thread {
                             if (!names.contains(tname)) {
                                 name = tname;
                                 names.add(tname);
-                                sendOK();
+                                send("Message Welcome "+name+"!");
                                 Seek.sendListTo(this);
                             } else
-                                send("Name?");
+                                send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only a-z");
                         }
                     } else
-                        send("Name?");
+                        send("Name? "+"Enter your name (minimum 4 chars) and only a-z");
                 } else {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
