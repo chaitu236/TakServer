@@ -49,7 +49,7 @@ public class Client extends Thread {
     String listString = "List";
     Pattern listPattern;
 
-    String nameString = "Name ([a-z]{4,10})";
+    String nameString = "Name ([a-zA-Z]{4,10})";
     Pattern namePattern;
 
     String gameString = "Game#(\\d+) Show";
@@ -115,7 +115,7 @@ public class Client extends Thread {
         String temp;
         try {
             send("welcome!");
-            send("Name? "+"Enter your name (minimum 4 chars) and only a-z");
+            send("Name? "+"Enter your name (minimum 4 chars) and only letters");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 System.out.println("read "+temp);
