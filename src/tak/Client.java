@@ -132,10 +132,10 @@ public class Client extends Thread {
                                 send("Message Welcome "+name+"!");
                                 Seek.sendListTo(this);
                             } else
-                                send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only a-z");
+                                send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only letters");
                         }
                     } else
-                        send("Name? "+"Enter your name (minimum 4 chars) and only a-z");
+                        send("Name? "+"Enter your name (minimum 4 chars) and only letters");
                 } else {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
