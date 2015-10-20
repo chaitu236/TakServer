@@ -27,6 +27,9 @@ public class Client extends Thread {
     BufferedReader clientReader;
     PrintWriter clientWriter;
     String name = null;
+    int clientNo;
+    
+    static int totalClients=0;
 
     static Set<String> names = new HashSet<>();
     static Set<Client> clientConnections = new HashSet<>();
@@ -57,6 +60,7 @@ public class Client extends Thread {
     
     Client(Socket socket) {
         this.socket = socket;
+        this.clientNo = totalClients++;
 
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
@@ -74,6 +78,7 @@ public class Client extends Thread {
         }
         clientConnections.add(this);
         Seek.registerListener(this);
+        System.out.println("Connected to "+clientNo);
     }
 
     void sendOK() {
@@ -118,7 +123,7 @@ public class Client extends Thread {
             send("Name? "+"Enter your name (minimum 4 chars) and only letters");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
-                System.out.println("read "+temp);
+                System.out.println(clientNo+": "+((name!=null)?name:"")+": "+temp);
                 
                 Matcher m;
 
@@ -244,7 +249,7 @@ public class Client extends Thread {
             }
 
             clientQuit();
-            System.out.println("disconnected");
+            System.out.println(clientNo+": "+((name!=null)?name:"")+": disconnected");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }

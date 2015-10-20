@@ -410,6 +410,8 @@ public class Game {
                return (lf==0 && rf == boardSize-1) || (br==0 && tr==boardSize-1);
             }
             boolean merge(Graph g) {
+                if(g==this)
+                    return false;
                 boolean ret=false;
                 //System.out.println("merge "+g.no+" with "+no);
                 for(Square sq: g.squares) {
