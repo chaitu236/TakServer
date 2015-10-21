@@ -33,6 +33,7 @@ public class Client extends Thread {
     int clientNo;
     
     static int totalClients=0;
+    static int onlineClients=0;
 
     static Set<String> names = new HashSet<>();
     static Set<Client> clientConnections = new HashSet<>();
@@ -103,6 +104,16 @@ public class Client extends Thread {
             seek = null;
         }
     }
+    
+    static void sendAll(final String msg) {
+        new Thread() {
+            @Override
+            public void run() {
+                for(Client c: clientConnections)
+                    c.send(msg);
+            }
+        }.start();
+    }
 
     void clientQuit() throws IOException {
         clientConnections.remove(this);
@@ -116,6 +127,7 @@ public class Client extends Thread {
         if (name != null) {
             names.remove(name);
         }
+        sendAll("Online "+(--onlineClients));
     }
 
     @Override
@@ -139,6 +151,7 @@ public class Client extends Thread {
                                 names.add(tname);
                                 send("Message Welcome "+name+"!");
                                 Seek.sendListTo(this);
+                                sendAll("Online "+(++onlineClients));
                             } else
                                 send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only letters");
                         }
@@ -250,11 +263,15 @@ public class Client extends Thread {
                     }
                 }
             }
-
-            clientQuit();
-            System.out.println(clientNo+": "+((name!=null)?name:"")+": disconnected");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                clientQuit();
+            } catch (IOException ex) {
+                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            System.out.println(clientNo+": "+((name!=null)?name:"")+": disconnected");
         }
     }
     static void sigterm() {

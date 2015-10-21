@@ -33,6 +33,7 @@ The server to client messages and their format is as below
 |Seek new **no** **name** **boardsize**|There is a new seek with seek no. **no** posted by **name** with board size **boardsize**|
 |Seek remove **no** **name** **boardsize**|Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
 |Message **text** |A generic message from server. Might be used to indicate announcements like name accepted/server going down, etc|
+|Online **no** |**no** players are connected to server|
 |NOK |Indicates the command client send is invalid or unrecognized|
 |OK  |Indicates previous command is ok. Clients can ignore this. I might remove this message altogether in future as it serves no real purpose|
 
