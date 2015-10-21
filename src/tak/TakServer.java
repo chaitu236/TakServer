@@ -38,6 +38,15 @@ public class TakServer extends Thread{
         // TODO code application logic here
         TakServer takServer = new TakServer();
         takServer.start();
+        System.out.println("dir: "+System.getProperty("user.dir"));
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            @Override
+            public void run()
+            {
+                Client.sigterm();
+            }
+        });
     }
     
 }

@@ -1,6 +1,9 @@
 package tak;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -253,5 +256,23 @@ public class Client extends Thread {
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    static void sigterm() {
+        System.out.println("Sigterm!");
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(new File("message")));
+            String msg = br.readLine();
+            for(Client c: clientConnections)
+                c.send("Message "+msg);
+            int sleep=Integer.parseInt(br.readLine());
+            System.out.println("sleeping "+sleep+" seconds");
+            Thread.sleep(sleep);
+            for(Client c: clientConnections)
+                c.send("Message "+br.readLine());
+            System.out.println("Exiting");
+        } catch (IOException | NumberFormatException | InterruptedException ex) {
+            System.out.println(ex);
+        }
+        
     }
 }
