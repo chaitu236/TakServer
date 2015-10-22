@@ -98,6 +98,7 @@ public class Client extends Thread {
     }
 
     void send(String st) {
+        Log("Send:"+st);
         clientWriter.println(st);
         clientWriter.flush();
     }
@@ -124,13 +125,13 @@ public class Client extends Thread {
         if(game!=null){
             game.clientQuit(this);
         }
-        socket.close();
 
-        removeSeeks();
         Seek.unregisterListener(this);
+        removeSeeks();
         if (name != null) {
             names.remove(name);
         }
+        socket.close();
         sendAll("Online "+(--onlineClients));
         Log("disconnected");
     }
@@ -147,6 +148,7 @@ public class Client extends Thread {
             send("Name? "+"Enter your name (minimum 4 chars) and only letters");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
+                Log("Read:"+temp);
                 
                 Matcher m;
 
