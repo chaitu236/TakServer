@@ -41,6 +41,9 @@ public class Client extends Thread {
     Game game = null;
     Seek seek = null;
 
+    String clientString = "Client ([A-Za-z-.0-9]{4,15})";
+    Pattern clientPattern;
+    
     String placeString = "Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
     Pattern placePattern;
 
@@ -66,6 +69,7 @@ public class Client extends Thread {
         this.socket = socket;
         this.clientNo = totalClients++;
 
+        clientPattern = Pattern.compile(clientString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
         seekPattern = Pattern.compile(seekString);
@@ -82,7 +86,7 @@ public class Client extends Thread {
         }
         clientConnections.add(this);
         Seek.registerListener(this);
-        System.out.println("Connected to "+clientNo);
+        Log("Connected");
     }
 
     void sendOK() {
@@ -128,6 +132,11 @@ public class Client extends Thread {
             names.remove(name);
         }
         sendAll("Online "+(--onlineClients));
+        Log("disconnected");
+    }
+    
+    void Log(Object obj) {
+        TakServer.Log(clientNo+":"+((name!=null)?name:"")+":"+obj);
     }
 
     @Override
@@ -138,18 +147,21 @@ public class Client extends Thread {
             send("Name? "+"Enter your name (minimum 4 chars) and only letters");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
-                System.out.println(clientNo+": "+((name!=null)?name:"")+": "+temp);
                 
                 Matcher m;
 
                 if (name == null) {
-                    if ((m = namePattern.matcher(temp)).find()) {
+                    if((m = clientPattern.matcher(temp)).find()){
+                        Log("Client "+m.group(1));
+                    }
+                    else if ((m = namePattern.matcher(temp)).find()) {
                         String tname = m.group(1).trim();
                         synchronized(names) {
                             if (!names.contains(tname)) {
                                 name = tname;
                                 names.add(tname);
                                 send("Message Welcome "+name+"!");
+                                Log("Name set");
                                 Seek.sendListTo(this);
                                 sendAll("Online "+(++onlineClients));
                             } else
@@ -169,6 +181,7 @@ public class Client extends Thread {
                             Seek.removeSeek(seek.no);
                         }
                         seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
+                        Log("Seek "+seek.boardSize);
                         sendOK();
                     } //Accept a seek
                     else if (game==null && (m = acceptSeekPattern.matcher(temp)).find()) {
@@ -271,24 +284,23 @@ public class Client extends Thread {
             } catch (IOException ex) {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             }
-            System.out.println(clientNo+": "+((name!=null)?name:"")+": disconnected");
         }
     }
     static void sigterm() {
-        System.out.println("Sigterm!");
+        TakServer.Log("Sigterm!");
         try {
             BufferedReader br = new BufferedReader(new FileReader(new File("message")));
             String msg = br.readLine();
             for(Client c: clientConnections)
                 c.send("Message "+msg);
             int sleep=Integer.parseInt(br.readLine());
-            System.out.println("sleeping "+sleep+" seconds");
+            TakServer.Log("sleeping "+sleep+" seconds");
             Thread.sleep(sleep);
             for(Client c: clientConnections)
                 c.send("Message "+br.readLine());
-            System.out.println("Exiting");
+            TakServer.Log("Exiting");
         } catch (IOException | NumberFormatException | InterruptedException ex) {
-            System.out.println(ex);
+            TakServer.Log(ex);
         }
         
     }

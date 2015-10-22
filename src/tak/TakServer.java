@@ -8,6 +8,7 @@ package tak;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +26,7 @@ public class TakServer extends Thread{
         try {
             ssocket = new ServerSocket(10000);
             while(true) {
-                System.out.println("waiting for connection\n");
+                TakServer.Log("Waiting for connection");
                 Socket socket = ssocket.accept();
                 Client cc = new Client(socket);
                 cc.start();
@@ -38,7 +39,7 @@ public class TakServer extends Thread{
         // TODO code application logic here
         TakServer takServer = new TakServer();
         takServer.start();
-        System.out.println("dir: "+System.getProperty("user.dir"));
+        TakServer.Log("dir: "+System.getProperty("user.dir"));
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
             @Override
@@ -48,5 +49,7 @@ public class TakServer extends Thread{
             }
         });
     }
-    
+    static void Log(Object obj) {
+        System.out.println(new Date()+"        "+obj);
+    }
 }
