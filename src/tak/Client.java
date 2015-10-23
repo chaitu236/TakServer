@@ -2,12 +2,12 @@ package tak;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -40,29 +40,39 @@ public class Client extends Thread {
 
     Game game = null;
     Seek seek = null;
+    ArrayList<Game> spectating;
 
-    String clientString = "Client ([A-Za-z-.0-9]{4,15})";
+    String clientString = "^Client ([A-Za-z-.0-9]{4,15})";
     Pattern clientPattern;
     
-    String placeString = "Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
+    String placeString = "^Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
     Pattern placePattern;
 
-    String moveString = "Game#(\\d+) M ([A-Z])(\\d) ([A-Z])(\\d)(( \\d)+)";
+    String moveString = "^Game#(\\d+) M ([A-Z])(\\d) ([A-Z])(\\d)(( \\d)+)";
     Pattern movePattern;
 
-    String seekString = "Seek (\\d)";
+    String seekString = "^Seek (\\d)";
     Pattern seekPattern;
 
-    String acceptSeekString = "Accept (\\d+)";
+    String acceptSeekString = "^Accept (\\d+)";
     Pattern acceptSeekPattern;
 
-    String listString = "List";
+    String listString = "^List";
     Pattern listPattern;
 
-    String nameString = "Name ([a-zA-Z]{4,10})";
+    String gameListString = "^GameList";
+    Pattern gameListPattern;
+    
+    String observeString = "^Observe (\\d+)";
+    Pattern observePattern;
+    
+    String unobserveString = "^Unobserve (\\d+)";
+    Pattern unobservePattern;
+    
+    String nameString = "^Name ([a-zA-Z]{4,10})";
     Pattern namePattern;
 
-    String gameString = "Game#(\\d+) Show";
+    String gameString = "^Game#(\\d+) Show";
     Pattern gamePattern;
     
     Client(Socket socket) {
@@ -76,7 +86,10 @@ public class Client extends Thread {
         acceptSeekPattern = Pattern.compile(acceptSeekString);
         listPattern = Pattern.compile(listString);
         namePattern = Pattern.compile(nameString);
+        gameListPattern = Pattern.compile(gameListString);
         gamePattern = Pattern.compile(gameString);
+        observePattern = Pattern.compile(observeString);
+        unobservePattern = Pattern.compile(unobserveString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -86,6 +99,8 @@ public class Client extends Thread {
         }
         clientConnections.add(this);
         Seek.registerListener(this);
+        Game.registerGameListListener(this);
+        spectating = new ArrayList<>();
         Log("Connected");
     }
 
@@ -110,6 +125,11 @@ public class Client extends Thread {
         }
     }
     
+    void unspectateAll() {
+        for(Game g: spectating)
+            g.spectators.remove(this);
+    }
+    
     static void sendAll(final String msg) {
         new Thread() {
             @Override
@@ -127,12 +147,18 @@ public class Client extends Thread {
         }
 
         Seek.unregisterListener(this);
+        Game.unregisterGameListListener(this);
         removeSeeks();
+        unspectateAll();
+        if(game!=null)
+            Game.removeGame(game);
+
         if (name != null) {
             names.remove(name);
+            sendAll("Online "+(--onlineClients));
         }
+
         socket.close();
-        sendAll("Online "+(--onlineClients));
         Log("disconnected");
     }
     
@@ -165,6 +191,7 @@ public class Client extends Thread {
                                 send("Message Welcome "+name+"!");
                                 Log("Name set");
                                 Seek.sendListTo(this);
+                                Game.sendGameListTo(this);
                                 sendAll("Online "+(++onlineClients));
                             } else
                                 send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only letters");
@@ -175,7 +202,6 @@ public class Client extends Thread {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
                         sendOK();
-                        //send("List " + Seek.seeks.toString());
                         Seek.sendListTo(this);
                     } //Seek a game
                     else if (game==null && (m = seekPattern.matcher(temp)).find()) {
@@ -197,7 +223,10 @@ public class Client extends Thread {
                             otherClient.removeSeeks();
 
                             game = new Game(this, otherClient, sz);
+                            Game.addGame(game);
                             otherClient.game = game;
+                            unspectateAll();
+                            
                             sendOK();
                             String msg = "Game Start " + game.no +" "+sz+" "+game.white.name+" vs "+game.black.name;
                             send(msg+" "+((game.white==this)?"white":"black"));
@@ -215,6 +244,8 @@ public class Client extends Thread {
                             //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
+                            game.moveList.add(temp);
+                            game.sendToSpectators(temp);
                             
                             if(game.gameState!=game.gameState.NONE){
                                 String msg = "Game#"+game.no+" Over ";
@@ -227,6 +258,9 @@ public class Client extends Thread {
                                 }
                                 send(msg);
                                 other.send(msg);
+                                game.moveList.add(msg);
+                                game.sendToSpectators(msg);
+                                Game.removeGame(game);
                                 game = null;
                                 other.game = null;
                             }
@@ -244,11 +278,11 @@ public class Client extends Thread {
                         Status st = game.moveMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4).charAt(0), Integer.parseInt(m.group(5)), argsint);
                         if(st.isOk()){
                             sendOK();
-                            //game.white.send(game.toString());
-                            //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
                             other.send(temp);
-                            if(game.gameState!=game.gameState.NONE){
+                            game.moveList.add(temp);
+                            game.sendToSpectators(temp);
+                            if(game.gameState!=Game.gameS.NONE){
                                 String msg = "Game#"+game.no+" Over ";
                                 switch(game.gameState) {
                                     case DRAW: msg+= "1/2-1/2"; break;
@@ -259,6 +293,9 @@ public class Client extends Thread {
                                 }
                                 send(msg);
                                 other.send(msg);
+                                game.moveList.add(msg);
+                                game.sendToSpectators(msg);
+                                Game.removeGame(game);
                                 game = null;
                                 other.game = null;
                             }
@@ -271,6 +308,32 @@ public class Client extends Thread {
                     else if (game != null && (m=gamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
                         sendOK();
                         send(game.toString());
+                    }
+                    //GameList
+                    else if ((m=gameListPattern.matcher(temp)).find()){
+                        Game.sendGameListTo(this);
+                    }
+                    //ObserveGame
+                    else if ((m=observePattern.matcher(temp)).find()){
+                        Game game = Game.games.get(Integer.parseInt(m.group(1)));
+                        if(game!=null){
+                            if(spectating.contains(game)) {
+                                send("Message you're already observing this game");
+                            } else {
+                                spectating.add(game);
+                                game.newSpectator(this);
+                            }
+                        } else
+                            sendNOK();
+                    }
+                    //UnobserveGame
+                    else if ((m=unobservePattern.matcher(temp)).find()){
+                        Game game = Game.games.get(Integer.parseInt(m.group(1)));
+                        if(game!=null){
+                            spectating.remove(game);
+                            game.unSpectate(this);
+                        } else
+                            sendNOK();
                     }
                     //Undefined
                     else {

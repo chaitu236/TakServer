@@ -6,9 +6,15 @@
 package tak;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.Stack;
+import static tak.Seek.seekListeners;
 
 /**
  *
@@ -28,9 +34,15 @@ public class Game {
     int whiteTilesCount;
     int blackTilesCount;
     
+    Set<Client> spectators;
+    
     public enum gameS {WHITE_ROAD, BLACK_ROAD, WHITE_TILE, BLACK_TILE, DRAW,
                         NONE};
+    List<String> moveList;
     gameS gameState;
+    
+    static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
+    static Set<Client> gameListeners = Collections.synchronizedSet(new HashSet<Client>());
     
     class Square {
         private int file, row;
@@ -51,7 +63,10 @@ public class Game {
         }
         int size() {
             return stack.size();
-        }    
+        }
+        char get(int i) {
+            return stack.get(i);
+        }
         char pop() {
             if(stack.size() > 0) {
                 char ret = topOfStack();
@@ -107,23 +122,78 @@ public class Game {
         board = new Square[boardSize][boardSize];
         no = ++gameNo;
         gameState = gameS.NONE;
+        moveList = Collections.synchronizedList(new ArrayList<String>());
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
                 Square sq = board[i][j] = new Square(j, i+1);
             }
         }
+        spectators = Collections.synchronizedSet(new HashSet<Client>());
     }
 
     Game(Client c1, Client c2) {
         this(c1, c2, DEFAULT_SIZE);
     }
+    
+    static void addGame(Game g) {
+        Game.games.put(g.no, g);
+        Game.updateGameListListeners("Add "+g.shortDesc());
+    }
+    
+    static void removeGame(Game g) {
+        Game.updateGameListListeners("Remove "+g.shortDesc());
+        Game.games.remove(g.no);
+    }
 
+    void newSpectator(Client c) {
+        c.send("Observe "+shortDesc());
+        sendMoveListTo(c);
+        spectators.add(c);
+    }
+    void unSpectate(Client c) {
+        spectators.remove(c);
+    }
+    static void sendGameListTo(Client c) {
+        for (Integer no : Game.games.keySet()) {
+            c.send("GameList Add "+Game.games.get(no).shortDesc());
+        }
+    }
+    
+    void sendMoveListTo(Client c) {
+        for(String st:moveList)
+            c.send(st);
+    }
+    
+    String shortDesc(){
+        StringBuilder sb=new StringBuilder("Game#"+no+" ");
+        sb.append(white.name).append(" vs ").append(black.name);
+        sb.append(", ").append(boardSize).append("x").append(boardSize).append(",");
+        sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.name:black.name).append(" to move");
+        return sb.toString();
+    }
+    
+    static void registerGameListListener(Client c) {
+        gameListeners.add(c);
+    }
+    
+    static void unregisterGameListListener(Client c) {
+        gameListeners.remove(c);
+    }
+    
+    static void updateGameListListeners(final String st) {
+        new Thread() {
+            @Override
+            public void run() {
+                for (Client cc : gameListeners) {
+                    cc.send("GameList " + st);
+                }
+            }
+        }.start();
+    }
     @Override
     public String toString() {
-        StringBuilder sb=new StringBuilder("Game#"+no+"\n");
-        sb.append(white.name).append(" vs ").append(black.name).append("\n");
-        sb.append("Moves ").append(moveCount).append(" ").append(isWhitesTurn()?white.name:black.name).append("'s turn").append("\n");
+        StringBuilder sb=new StringBuilder(shortDesc());
         
         for(int i=boardSize;i>0;i--){
             for(char j='A';j<boardSize+'A';j++){
@@ -249,6 +319,35 @@ public class Game {
         return x>0?x:-x;
     }
     
+    String getPTN() {
+        String ret="";
+        for(int i=0;i<this.boardSize;i++){
+            int xcnt=0;
+            for(int j=0;j<this.boardSize;j++){
+                Square sq = board[i][j];
+                if(sq.isEmpty())
+                    xcnt=0;
+                else {
+                    ret+="x"+xcnt;
+                    String cell="";
+                    for(int k=0;k<sq.size();k++){
+                        char ch = sq.get(k);
+                        cell+=isWhite(ch)?"1":"2";
+                        if(isWall(ch))
+                            cell+="S";
+                        else if(isCapstone(ch))
+                            cell+="C";
+                    }
+                    if(j!=this.boardSize-1)
+                        cell+=",";
+                }
+            }
+            ret+="/";
+        }
+        ret+=" "+this.moveCount+" "+(isWhitesTurn()?"1":"2");
+        return ret;
+    }
+    
     Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {        
         //alternate turns
         if(!turnOf(c))
@@ -351,6 +450,15 @@ public class Game {
         checkRoadWin();
         checkOutOfSquares();
         return new Status(true);
+    }
+    void sendToSpectators(final String msg) {
+        new Thread() {
+            @Override
+            public void run() {
+                for(Client c:spectators)
+                    c.send(msg);
+            }
+        }.start();
     }
     void findWhoWon() {
         int blackCount=0, whiteCount=0;
