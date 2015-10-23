@@ -222,10 +222,14 @@ public class Client extends Thread {
                             int sz = sk.boardSize;
                             otherClient.removeSeeks();
 
+                            spectating.clear();
+                            unspectateAll();
+                            otherClient.unspectateAll();
+                            otherClient.spectating.clear();
+                            
                             game = new Game(this, otherClient, sz);
                             Game.addGame(game);
                             otherClient.game = game;
-                            unspectateAll();
                             
                             sendOK();
                             String msg = "Game Start " + game.no +" "+sz+" "+game.white.name+" vs "+game.black.name;

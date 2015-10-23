@@ -168,7 +168,7 @@ public class Game {
     String shortDesc(){
         StringBuilder sb=new StringBuilder("Game#"+no+" ");
         sb.append(white.name).append(" vs ").append(black.name);
-        sb.append(", ").append(boardSize).append("x").append(boardSize).append(",");
+        sb.append(", ").append(boardSize).append("x").append(boardSize).append(", ");
         sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.name:black.name).append(" to move");
         return sb.toString();
     }
@@ -603,7 +603,9 @@ public class Game {
     void clientQuit(Client c) {
         Client otherClient = (c==white)?black:white;
         otherClient.game = null;
-        otherClient.send("Game#"+no+" Abandoned. "+c.name+" quit");
+        String msg = "Game#"+no+" Abandoned. "+c.name+" quit";
+        otherClient.send(msg);
+        sendToSpectators(msg);
     }
     
     class SquareIterator {
