@@ -85,6 +85,10 @@ public class Game {
         public String toString() {
             return ((char)(file+'A'))+""+row+" "+graphNo;
         }
+        
+        public String stackString() {
+            return stack.toString();
+        }
     }
     Square[][] board;
 
@@ -197,7 +201,7 @@ public class Game {
         
         for(int i=boardSize;i>0;i--){
             for(char j='A';j<boardSize+'A';j++){
-                sb.append(getSquare(j, i)).append(" ");
+                sb.append(getSquare(j, i).stackString()).append(" ");
             }
             sb.append("\n");
         }
@@ -222,6 +226,13 @@ public class Game {
     private boolean turnOf(Client c) {
         boolean whiteTurn = isWhitesTurn();
         return (c==white)==whiteTurn;
+    }
+    
+    String sqState(char file, int rank) {
+        Square sq = getSquare(file, rank);
+        if(sq==null)
+            return "[]";
+        return sq.stackString();
     }
     
     void checkOutOfPieces() {

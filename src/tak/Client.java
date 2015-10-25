@@ -73,8 +73,11 @@ public class Client extends Thread {
     String nameString = "^Name ([a-zA-Z][a-zA-Z0-9_]{3,9})";
     Pattern namePattern;
 
-    String gameString = "^Game#(\\d+) Show";
+    String gameString = "^Game#(\\d+) Show$";
     Pattern gamePattern;
+    
+    String getSqStateString = "^Game#(\\d+) Show ([A-Z])(\\d)";
+    Pattern getSqStatePattern;
     
     Client(Socket socket) {
         this.socket = socket;
@@ -96,6 +99,7 @@ public class Client extends Thread {
         gamePattern = Pattern.compile(gameString);
         observePattern = Pattern.compile(observeString);
         unobservePattern = Pattern.compile(unobserveString);
+        getSqStatePattern = Pattern.compile(getSqStateString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -318,6 +322,10 @@ public class Client extends Thread {
                     else if (game != null && (m=gamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
                         sendOK();
                         send(game.toString());
+                    }
+                    //Show sq state for a game
+                    else if (game != null && (m=getSqStatePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        send("Game#"+game.no+" Show Sq "+game.sqState(m.group(2).charAt(0), Integer.parseInt(m.group(3))));
                     }
                     //GameList
                     else if ((m=gameListPattern.matcher(temp)).find()){
