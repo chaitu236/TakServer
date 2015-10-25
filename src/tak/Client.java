@@ -69,7 +69,7 @@ public class Client extends Thread {
     String unobserveString = "^Unobserve (\\d+)";
     Pattern unobservePattern;
     
-    String nameString = "^Name ([a-zA-Z]{4,10})";
+    String nameString = "^Name ([a-zA-Z][a-zA-Z0-9_]{3,9})";
     Pattern namePattern;
 
     String gameString = "^Game#(\\d+) Show";
@@ -171,7 +171,7 @@ public class Client extends Thread {
         String temp;
         try {
             send("welcome!");
-            send("Name? "+"Enter your name (minimum 4 chars) and only letters");
+            send("Name? "+"Enter your name (minimum 4 chars) and starts with letter");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 Log("Read:"+temp);
