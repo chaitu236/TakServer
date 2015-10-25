@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -77,6 +78,11 @@ public class Client extends Thread {
     
     Client(Socket socket) {
         this.socket = socket;
+        try {
+            socket.setTcpNoDelay(true);
+        } catch (SocketException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
         this.clientNo = totalClients++;
 
         clientPattern = Pattern.compile(clientString);
