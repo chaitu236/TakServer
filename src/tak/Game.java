@@ -476,7 +476,7 @@ public class Game {
         for(int i=0;i<this.boardSize;i++){
             for(int j=0;j<this.boardSize;j++){
                 char ch = board[i][j].topOfStack();
-                if(ch!=0 && !isWall(ch)){
+                if(ch!=0 && !isWall(ch) && !isCapstone(ch)){
                     if(isWhite(ch))
                         whiteCount++;
                     else
@@ -496,7 +496,7 @@ public class Game {
             return;
         for(int i=0;i<this.boardSize;i++){
             for(int j=0;j<this.boardSize;j++){
-                if(board[i][j].size()>0)
+                if(board[i][j].isEmpty())
                     return;
             }
         }
