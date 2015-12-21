@@ -29,4 +29,8 @@ public class Status {
     String msg() {
         return msg;
     }
+    
+    public String toString() {
+        return (ok?"OK":"NOK")+" "+msg;
+    }
 }

@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import static tak.Seek.seekListeners;
 
 /**
  *
@@ -198,7 +197,12 @@ public class Game {
     @Override
     public String toString() {
         StringBuilder sb=new StringBuilder(shortDesc());
-        
+        sb.append(getBoardString());
+        return sb.toString();
+    }
+    
+    public String getBoardString() {
+        StringBuilder sb = new StringBuilder();
         for(int i=boardSize;i>0;i--){
             for(char j='A';j<boardSize+'A';j++){
                 sb.append(getSquare(j, i).stackString()).append(" ");
@@ -225,7 +229,7 @@ public class Game {
     
     private boolean turnOf(Client c) {
         boolean whiteTurn = isWhitesTurn();
-        return (c==white)==whiteTurn;
+        return ((c==white)==whiteTurn)||((c==black)==!whiteTurn);
     }
     
     String sqState(char file, int rank) {
@@ -244,6 +248,7 @@ public class Game {
             findWhoWon();
         }
     }
+    
     Status placeMove(Client c, char file, int rank, boolean capstone,
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
@@ -359,7 +364,11 @@ public class Game {
         return ret;
     }
     
-    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {        
+    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) { 
+//        System.out.print("moveMove "+f1+""+r1+"->"+f2+""+r2+" ");
+//        for(int i:vals)
+//            System.out.print(i);
+//        System.out.println("");
         //alternate turns
         if(!turnOf(c))
             return new Status("Not your turn", false);
@@ -446,8 +455,8 @@ public class Game {
             //flatten
             else if(sqr == endSq && moveStack.size()==1 &&
                     isCapstone(moveStack.peek()) && isWall(sqr.topOfStack())){
-                sqr.pop();
-                sqr.add(FLAT);
+                char ch = sqr.pop();
+                sqr.add(isWhite(ch)?Character.toUpperCase(FLAT):FLAT);
                 sqr.add(moveStack.pop());
             }
             //move elements
