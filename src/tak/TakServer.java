@@ -36,7 +36,8 @@ public class TakServer extends Thread{
         }
     }
     public static void main(String[] args) {
-        // TODO code application logic here
+        Database.initConnection();
+        
         TakServer takServer = new TakServer();
         takServer.start();
         TakServer.Log("dir: "+System.getProperty("user.dir"));
