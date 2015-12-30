@@ -22,17 +22,17 @@ public class Player {
     public static HashMap<String, Player> players = new HashMap<>();
     static int idCount=0;
     
-    String name;
-    String password;
-    String email;
-    int id;//Primary key
+    private String name;
+    private String password;
+    private String email;
+    private int id;//Primary key
 
     //Ratings for 4x4.. 8x8 games
-    int r4;
-    int r5;
-    int r6;
-    int r7;
-    int r8;
+    private int r4;
+    private int r5;
+    private int r6;
+    private int r7;
+    private int r8;
     
     Player(String name, String email, String password, int id, int r4, int r5,
                         int r6, int r7, int r8) {
@@ -62,6 +62,9 @@ public class Player {
             System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
             stmt.close();
+            
+            EMail.send(np.email, "playtak.com password", "Your password is "+np.password);
+            players.put(np.name, np);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -161,6 +164,10 @@ public class Player {
         return email;
     }
     
+    public String getPassword() {
+        return password;
+    }
+    
     public int getId() {
         return id;
     }
@@ -171,8 +178,8 @@ public class Player {
                 ResultSet rs = stmt.executeQuery("SELECT * FROM PLAYERS;")) {
             while(rs.next()) {
                 Player np = new Player(rs.getString("name"),
-                        rs.getString("password"),
                         rs.getString("email"),
+                        rs.getString("password"),
                         rs.getInt("id"),
                         rs.getInt("r4"),
                         rs.getInt("r5"),

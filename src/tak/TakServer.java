@@ -18,13 +18,14 @@ import java.util.logging.Logger;
  */
 public class TakServer extends Thread{
 
+    public static int port = 10000;
     /**
      */
     @Override
     public void run () {
         ServerSocket ssocket;
         try {
-            ssocket = new ServerSocket(10000);
+            ssocket = new ServerSocket(port);
             while(true) {
                 TakServer.Log("Waiting for connection");
                 Socket socket = ssocket.accept();
@@ -37,6 +38,10 @@ public class TakServer extends Thread{
     }
     public static void main(String[] args) {
         Database.initConnection();
+        Player.loadFromDB();
+        
+        if(args.length>0)
+            port = Integer.parseInt(args[0]);
         
         TakServer takServer = new TakServer();
         takServer.start();

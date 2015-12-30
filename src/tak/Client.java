@@ -30,19 +30,25 @@ public class Client extends Thread {
     Socket socket;
     BufferedReader clientReader;
     PrintWriter clientWriter;
-    String name = null;
+    Player player = null;
     int clientNo;
     
     static int totalClients=0;
     static int onlineClients=0;
 
-    static Set<String> names = new HashSet<>();
+    static Set<Player> onlinePlayers = new HashSet<>();
     static Set<Client> clientConnections = new HashSet<>();
 
     Game game = null;
     Seek seek = null;
     ArrayList<Game> spectating;
 
+    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([a-zA-Z0-9_]{3,50})";
+    Pattern loginPattern;
+    
+    String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([A-Za-z.0-9_-]{1,30}@[A-Za-z.0-9_-]{3,30})";
+    Pattern registerPattern;
+    
     String clientString = "^Client ([A-Za-z-.0-9]{4,15})";
     Pattern clientPattern;
     
@@ -69,9 +75,6 @@ public class Client extends Thread {
     
     String unobserveString = "^Unobserve (\\d+)";
     Pattern unobservePattern;
-    
-    String nameString = "^Name ([a-zA-Z][a-zA-Z0-9_]{3,9})";
-    Pattern namePattern;
 
     String gameString = "^Game#(\\d+) Show$";
     Pattern gamePattern;
@@ -88,13 +91,14 @@ public class Client extends Thread {
         }
         this.clientNo = totalClients++;
 
+        loginPattern = Pattern.compile(loginString);
+        registerPattern = Pattern.compile(registerString);
         clientPattern = Pattern.compile(clientString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
         seekPattern = Pattern.compile(seekString);
         acceptSeekPattern = Pattern.compile(acceptSeekString);
         listPattern = Pattern.compile(listString);
-        namePattern = Pattern.compile(nameString);
         gameListPattern = Pattern.compile(gameListString);
         gamePattern = Pattern.compile(gameString);
         observePattern = Pattern.compile(observeString);
@@ -163,8 +167,8 @@ public class Client extends Thread {
         if(game!=null)
             Game.removeGame(game);
 
-        if (name != null) {
-            names.remove(name);
+        if (player != null) {
+            onlinePlayers.remove(player);
             sendAll("Online "+(--onlineClients));
         }
 
@@ -173,7 +177,7 @@ public class Client extends Thread {
     }
     
     void Log(Object obj) {
-        TakServer.Log(clientNo+":"+((name!=null)?name:"")+":"+obj);
+        TakServer.Log(clientNo+":"+((player!=null)?player.getName():"")+":"+obj);
     }
 
     @Override
@@ -181,33 +185,56 @@ public class Client extends Thread {
         String temp;
         try {
             send("welcome!");
-            send("Name? "+"Enter your name (minimum 4 chars) and starts with letter");
+            send("Login or Register");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
                 Log("Read:"+temp);
                 
                 Matcher m;
 
-                if (name == null) {
+                if (player == null) {
+                    //Client name set
                     if((m = clientPattern.matcher(temp)).find()){
                         Log("Client "+m.group(1));
                     }
-                    else if ((m = namePattern.matcher(temp)).find()) {
+                    //Login
+                    else if ((m = loginPattern.matcher(temp)).find()) {
                         String tname = m.group(1).trim();
-                        synchronized(names) {
-                            if (!names.contains(tname)) {
-                                name = tname;
-                                names.add(tname);
-                                send("Message Welcome "+name+"!");
-                                Log("Name set");
-                                Seek.sendListTo(this);
-                                Game.sendGameListTo(this);
-                                sendAll("Online "+(++onlineClients));
+                        synchronized(Player.players) {
+                            if (Player.players.containsKey(tname)) {
+                                Player tplayer = Player.players.get(tname);
+                                String pass = m.group(2).trim();
+                                
+                                if(!pass.equals(tplayer.getPassword())) {
+                                    send("Authentication failure");
+                                } else {
+                                    player = tplayer;
+                                    onlinePlayers.add(player);
+                                    send("Message Welcome "+player.getName()+"!");
+                                    Log("Player logged in");
+                                    Seek.sendListTo(this);
+                                    Game.sendGameListTo(this);
+                                    sendAll("Online "+(++onlineClients));
+                                }
                             } else
-                                send("Name? "+"Name "+tname+" already taken. "+"Enter your name (minimum 4 chars) and only letters");
+                                send("Authentication failure");
+                        }
+                    }
+                    //Registration
+                    else if ((m = registerPattern.matcher(temp)).find()) {
+                        String tname = m.group(1).trim();
+                        synchronized(Player.players) {
+                            if (Player.players.containsKey(tname)) {
+                                send("Name already taken");
+                            }
+                            else {
+                                String email = m.group(2).trim();
+                                Player tplayer = Player.createPlayer(tname, email);
+                                send("Registered "+tplayer.getName()+". Check your email for password");
+                            }
                         }
                     } else
-                        send("Name? "+"Enter your name (minimum 4 chars) and only letters");
+                        send("Login or Register");
                 } else {
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
@@ -242,7 +269,7 @@ public class Client extends Thread {
                             otherClient.game = game;
                             
                             sendOK();
-                            String msg = "Game Start " + game.no +" "+sz+" "+game.white.name+" vs "+game.black.name;
+                            String msg = "Game Start " + game.no +" "+sz+" "+game.white.player.getName()+" vs "+game.black.player.getName();
                             send(msg+" "+((game.white==this)?"white":"black"));
                             otherClient.send(msg+" "+((game.white==otherClient)?"white":"black"));
                         } else {

@@ -77,6 +77,6 @@ public class Seek {
     }
     @Override
     public String toString() {
-        return no+" "+client.name+" "+boardSize;
+        return no+" "+client.player.getName()+" "+boardSize;
     }
 }
