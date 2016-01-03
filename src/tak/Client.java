@@ -82,6 +82,9 @@ public class Client extends Thread {
     String getSqStateString = "^Game#(\\d+) Show ([A-Z])(\\d)";
     Pattern getSqStatePattern;
     
+    String shoutString = "Shout ([^\n\r]{1,256})";
+    Pattern shoutPattern;
+    
     Client(Socket socket) {
         this.socket = socket;
         try {
@@ -104,6 +107,7 @@ public class Client extends Thread {
         observePattern = Pattern.compile(observeString);
         unobservePattern = Pattern.compile(unobserveString);
         getSqStatePattern = Pattern.compile(getSqStateString);
+        shoutPattern = Pattern.compile(shoutString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -184,7 +188,7 @@ public class Client extends Thread {
     public void run() {
         String temp;
         try {
-            send("welcome!");
+            send("Welcome!");
             send("Login or Register");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
@@ -210,7 +214,7 @@ public class Client extends Thread {
                                 } else {
                                     player = tplayer;
                                     onlinePlayers.add(player);
-                                    send("Message Welcome "+player.getName()+"!");
+                                    send("Welcome "+player.getName()+"!");
                                     Log("Player logged in");
                                     Seek.sendListTo(this);
                                     Game.sendGameListTo(this);
@@ -245,8 +249,13 @@ public class Client extends Thread {
                         if (seek != null) {
                             Seek.removeSeek(seek.no);
                         }
-                        seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
-                        Log("Seek "+seek.boardSize);
+                        int no = Integer.parseInt(m.group(1));
+                        if(no == 0) {
+                            Log("Seek remove");
+                        } else {
+                            seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
+                            Log("Seek "+seek.boardSize);
+                        }
                         sendOK();
                     } //Accept a seek
                     else if (game==null && (m = acceptSeekPattern.matcher(temp)).find()) {
@@ -379,6 +388,10 @@ public class Client extends Thread {
                             game.unSpectate(this);
                         } else
                             sendNOK();
+                    }
+                    //Shout
+                    else if ((m=shoutPattern.matcher(temp)).find()){
+                        sendAll("Shout "+player.getName()+": "+m.group(1));
                     }
                     //Undefined
                     else {
