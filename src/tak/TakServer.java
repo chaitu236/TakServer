@@ -37,6 +37,7 @@ public class TakServer extends Thread{
         }
     }
     public static void main(String[] args) {
+        Settings.parse();
         Database.initConnection();
         Player.loadFromDB();
         
