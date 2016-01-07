@@ -34,6 +34,9 @@ public class Player {
     private int r7;
     private int r8;
     
+    //variables not in database
+    private Client client;
+    
     Player(String name, String email, String password, int id, int r4, int r5,
                         int r6, int r7, int r8) {
         this.name = name;
@@ -45,6 +48,20 @@ public class Player {
         this.r6 = r6;
         this.r7 = r7;
         this.r8 = r8;
+        
+        client = null;
+    }
+    
+    public boolean isLoggedIn() {
+        return client!=null;
+    }
+    
+    public void login(Client client) {
+        this.client = client;
+    }
+    
+    public void logout() {
+        this.client = null;
     }
     
     Player(String name, String email, String password) {

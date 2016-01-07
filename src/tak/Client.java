@@ -36,7 +36,6 @@ public class Client extends Thread {
     static int totalClients=0;
     static int onlineClients=0;
 
-    static Set<Player> onlinePlayers = new HashSet<>();
     static Set<Client> clientConnections = new HashSet<>();
 
     Game game = null;
@@ -172,7 +171,7 @@ public class Client extends Thread {
             Game.removeGame(game);
 
         if (player != null) {
-            onlinePlayers.remove(player);
+            player.logout();
             sendAll("Online "+(--onlineClients));
         }
 
@@ -211,9 +210,12 @@ public class Client extends Thread {
                                 
                                 if(!pass.equals(tplayer.getPassword())) {
                                     send("Authentication failure");
+                                } else if(tplayer.isLoggedIn()) {
+                                    send("You're already logged in");
                                 } else {
                                     player = tplayer;
-                                    onlinePlayers.add(player);
+                                    player.login(this);
+                                    
                                     send("Welcome "+player.getName()+"!");
                                     Log("Player logged in");
                                     Seek.sendListTo(this);
