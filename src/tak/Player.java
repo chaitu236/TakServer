@@ -68,6 +68,10 @@ public class Player {
         this(name, email, password, ++idCount, 0, 0, 0, 0, 0);
     }
     
+    Client getClient() {
+        return client;
+    }
+    
     static SecureRandom random = new SecureRandom();
     public static Player createPlayer(String name, String email) {
         Player np = new Player(name, email, new BigInteger(130, random).toString(32));

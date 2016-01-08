@@ -171,7 +171,7 @@ public class Client extends Thread {
     void clientQuit() throws IOException {
         clientConnections.remove(this);
         if(game!=null){
-            game.clientQuit(this);
+            game.playerQuit(player);
         }
 
         Seek.unregisterListener(this);
@@ -286,24 +286,24 @@ public class Client extends Thread {
                             otherClient.unspectateAll();
                             otherClient.spectating.clear();
                             
-                            game = new Game(this, otherClient, sz);
+                            game = new Game(player, otherClient.player, sz);
                             Game.addGame(game);
                             otherClient.game = game;
                             
                             sendOK();
-                            String msg = "Game Start " + game.no +" "+sz+" "+game.white.player.getName()+" vs "+game.black.player.getName();
-                            send(msg+" "+((game.white==this)?"white":"black"));
-                            otherClient.send(msg+" "+((game.white==otherClient)?"white":"black"));
+                            String msg = "Game Start " + game.no +" "+sz+" "+game.white.getName()+" vs "+game.black.getName();
+                            send(msg+" "+((game.white==player)?"white":"black"));
+                            otherClient.send(msg+" "+((game.white==otherClient.player)?"white":"black"));
                         } else {
                             sendNOK();
                         }
                     }
                     //Handle place move
                     else if (game != null && (m = placePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
-                        Status st = game.placeMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4) != null, m.group(5)!=null);
+                        Status st = game.placeMove(player, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4) != null, m.group(5)!=null);
                         if(st.isOk()){
                             sendOK();
-                            Client other = (game.white==this)?game.black:game.white;
+                            Client other = (game.white==player)?game.black.getClient():game.white.getClient();
                             
                             if(game.gameState!=Game.gameS.NONE){
                                 Game.removeGame(game);
@@ -321,10 +321,10 @@ public class Client extends Thread {
                         int argsint[] = new int[args.length-1];
                         for(int i=1;i<args.length;i++)
                             argsint[i-1] = Integer.parseInt(args[i]);
-                        Status st = game.moveMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4).charAt(0), Integer.parseInt(m.group(5)), argsint);
+                        Status st = game.moveMove(player, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4).charAt(0), Integer.parseInt(m.group(5)), argsint);
                         if(st.isOk()){
                             sendOK();
-                            Client other = (game.white==this)?game.black:game.white;
+                            Client other = (game.white==player)?game.black.getClient():game.white.getClient();
                             if(game.gameState!=Game.gameS.NONE){
                                 Game.removeGame(game);
                                 game = null;

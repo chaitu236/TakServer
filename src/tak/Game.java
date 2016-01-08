@@ -7,6 +7,7 @@ package tak;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,8 +22,9 @@ import java.util.Stack;
  */
 public class Game {
 
-    Client white;
-    Client black;
+    Player white;
+    Player black;
+    long time;
 
     int no;
     int boardSize;
@@ -101,10 +103,12 @@ public class Game {
     static final char WALL='w';
     static final char CAPSTONE='c';
 
-    Game(Client c1, Client c2, int b) {
+    Game(Player p1, Player p2, int b) {
         int rand = new Random().nextInt(99);
-        white = (rand>=50)?c1:c2;
-        black = (rand>=50)?c2:c1;
+        white = (rand>=50)?p1:p2;
+        black = (rand>=50)?p2:p1;
+        
+        time = System.currentTimeMillis();
 
         if (b < 4 || b > 8) {
             b = DEFAULT_SIZE;
@@ -138,8 +142,8 @@ public class Game {
         spectators = Collections.synchronizedSet(new HashSet<Client>());
     }
 
-    Game(Client c1, Client c2) {
-        this(c1, c2, DEFAULT_SIZE);
+    Game(Player p1, Player p2) {
+        this(p1, p2, DEFAULT_SIZE);
     }
     
     static void addGame(Game g) {
@@ -173,9 +177,9 @@ public class Game {
     
     String shortDesc(){
         StringBuilder sb=new StringBuilder("Game#"+no+" ");
-        sb.append(white.player.getName()).append(" vs ").append(black.player.getName());
+        sb.append(white.getName()).append(" vs ").append(black.getName());
         sb.append(", ").append(boardSize).append("x").append(boardSize).append(", ");
-        sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.player.getName():black.player.getName()).append(" to move");
+        sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
         return sb.toString();
     }
     
@@ -230,9 +234,9 @@ public class Game {
         return moveCount%2 == 0;
     }
     
-    private boolean turnOf(Client c) {
+    private boolean turnOf(Player p) {
         boolean whiteTurn = isWhitesTurn();
-        return ((c==white)==whiteTurn)||((c==black)==!whiteTurn);
+        return ((p==white)==whiteTurn)||((p==black)==!whiteTurn);
     }
     
     String sqState(char file, int rank) {
@@ -252,12 +256,12 @@ public class Game {
         }
     }
     
-    Status placeMove(Client c, char file, int rank, boolean capstone,
+    Status placeMove(Player p, char file, int rank, boolean capstone,
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
           //      +capstone+" wall="+wall);
         Square sq = getSquare(file, rank);
-        if(!turnOf(c))
+        if(!turnOf(p))
             return new Status("Not your turn", false);
         
         if(sq!=null && sq.isEmpty()) {
@@ -302,7 +306,7 @@ public class Game {
             moveCount++;
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
             moveList.add(move);
-            sendMove(c, move);
+            sendMove(p, move);
             
             checkRoadWin();
             checkOutOfPieces();
@@ -315,7 +319,7 @@ public class Game {
         }
     }
     
-    Client stackController(Square sq) {
+    Player stackController(Square sq) {
         return Character.isUpperCase(sq.topOfStack())?white:black;
     }
     
@@ -372,13 +376,13 @@ public class Game {
         return ret;
     }
     
-    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {
+    Status moveMove(Player p, char f1, int r1, char f2, int r2, int[] vals) {
 //        System.out.print("moveMove "+f1+""+r1+"->"+f2+""+r2+" ");
 //        for(int i:vals)
 //            System.out.print(i);
 //        System.out.println("");
         //alternate turns
-        if(!turnOf(c))
+        if(!turnOf(p))
             return new Status("Not your turn", false);
         
         //first moves should be place moves
@@ -396,7 +400,7 @@ public class Game {
             return new Status("Out of bounds", false);
         
         //stack should be controlled by current player
-        if(c != stackController(startSq))
+        if(p != stackController(startSq))
             return new Status("You don't control stack", false);
         
         //carry size should be less than or equal to boardSize and stack size
@@ -480,7 +484,7 @@ public class Game {
         for(int val: vals)
             move+=val;
         moveList.add(move);
-        sendMove(c, move);
+        sendMove(p, move);
         
         checkRoadWin();
         checkOutOfSquares();
@@ -502,24 +506,23 @@ public class Game {
             case WHITE: msg+="1-0"; break;
             case BLACK: msg+="0-1"; break;
         }
-        moveList.add(msg);
         
-        if(gameState!=gameS.WHITE && gameState!=gameS.BLACK)
+        if(!abandoned)
             msg = "Game#"+no+" Over "+msg;
         else {
             Player abandoningPlayer;
             if(gameState==gameS.WHITE)
-                abandoningPlayer = black.player;
+                abandoningPlayer = black;
             else
-                abandoningPlayer = white.player;
+                abandoningPlayer = white;
             
             msg = "Game#"+no+" Abandoned. "+abandoningPlayer.getName()+" quit";
         }
         
-        if(gameState!=gameS.BLACK)
-            white.send(msg);
-        if(gameState!=gameS.WHITE)
-            black.send(msg);
+        if(!(abandoned && gameState==gameS.BLACK))
+            white.getClient().send(msg);
+        if(!(abandoned && gameState==gameS.WHITE))
+            black.getClient().send(msg);
         sendToSpectators(msg);
         
         saveToDB();
@@ -529,17 +532,17 @@ public class Game {
         
     }
     
-    void sendMove(Client c, String move) {
+    void sendMove(Player p, String move) {
         String msg="Game#"+no+" "+move;
-        sendToOtherClient(c, msg);
+        sendToOtherPlayer(p, msg);
         sendToSpectators(msg);
     }
     
-    void sendToOtherClient(Client c, String move) {
-        if(white==c)
-            black.send(move);
+    void sendToOtherPlayer(Player p, String move) {
+        if(white==p)
+            black.getClient().send(move);
         else
-            white.send(move);
+            white.getClient().send(move);
     }
     
     void sendToSpectators(final String msg) {
@@ -691,11 +694,11 @@ public class Game {
         }
     }
     
-    void clientQuit(Client c) {
-        Client otherClient = (c==white)?black:white;
+    void playerQuit(Player p) {
+        Player otherPlayer = (p==white)?black:white;
         abandoned = true;
-        otherClient.game = null;
-        gameState = (c==white)?gameS.BLACK:gameS.WHITE;
+        otherPlayer.getClient().game = null;
+        gameState = (p==white)?gameS.BLACK:gameS.WHITE;
         whenGameEnd();
     }
     
