@@ -156,6 +156,17 @@ public class Client extends Thread {
             }
         }.start();
     }
+    
+    static void sendAllOnline(final String msg) {
+        new Thread() {
+            @Override
+            public void run() {
+                for(Client c: clientConnections)
+                    if(c.player!=null)
+                        c.send(msg);
+            }
+        }.start();
+    }
 
     void clientQuit() throws IOException {
         clientConnections.remove(this);
@@ -172,7 +183,7 @@ public class Client extends Thread {
 
         if (player != null) {
             player.logout();
-            sendAll("Online "+(--onlineClients));
+            sendAllOnline("Online "+(--onlineClients));
         }
 
         socket.close();
@@ -220,7 +231,7 @@ public class Client extends Thread {
                                     Log("Player logged in");
                                     Seek.sendListTo(this);
                                     Game.sendGameListTo(this);
-                                    sendAll("Online "+(++onlineClients));
+                                    sendAllOnline("Online "+(++onlineClients));
                                 }
                             } else
                                 send("Authentication failure");
@@ -292,26 +303,9 @@ public class Client extends Thread {
                         Status st = game.placeMove(this, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4) != null, m.group(5)!=null);
                         if(st.isOk()){
                             sendOK();
-                            //game.white.send(game.toString());
-                            //game.black.send(game.toString());
                             Client other = (game.white==this)?game.black:game.white;
-                            other.send(temp);
-                            game.moveList.add(temp);
-                            game.sendToSpectators(temp);
                             
-                            if(game.gameState!=game.gameState.NONE){
-                                String msg = "Game#"+game.no+" Over ";
-                                switch(game.gameState) {
-                                    case DRAW: msg+= "1/2-1/2"; break;
-                                    case WHITE_ROAD: msg+="R-0"; break;
-                                    case BLACK_ROAD: msg+="0-R"; break;
-                                    case WHITE_TILE: msg+="F-0"; break;
-                                    case BLACK_TILE: msg+="0-F"; break;
-                                }
-                                send(msg);
-                                other.send(msg);
-                                game.moveList.add(msg);
-                                game.sendToSpectators(msg);
+                            if(game.gameState!=Game.gameS.NONE){
                                 Game.removeGame(game);
                                 game = null;
                                 other.game = null;
@@ -331,22 +325,7 @@ public class Client extends Thread {
                         if(st.isOk()){
                             sendOK();
                             Client other = (game.white==this)?game.black:game.white;
-                            other.send(temp);
-                            game.moveList.add(temp);
-                            game.sendToSpectators(temp);
                             if(game.gameState!=Game.gameS.NONE){
-                                String msg = "Game#"+game.no+" Over ";
-                                switch(game.gameState) {
-                                    case DRAW: msg+= "1/2-1/2"; break;
-                                    case WHITE_ROAD: msg+="R-0"; break;
-                                    case BLACK_ROAD: msg+="0-R"; break;
-                                    case WHITE_TILE: msg+="F-0"; break;
-                                    case BLACK_TILE: msg+="0-F"; break;
-                                }
-                                send(msg);
-                                other.send(msg);
-                                game.moveList.add(msg);
-                                game.sendToSpectators(msg);
                                 Game.removeGame(game);
                                 game = null;
                                 other.game = null;
@@ -393,7 +372,7 @@ public class Client extends Thread {
                     }
                     //Shout
                     else if ((m=shoutPattern.matcher(temp)).find()){
-                        sendAll("Shout "+player.getName()+": "+m.group(1));
+                        sendAllOnline("Shout "+player.getName()+": "+m.group(1));
                     }
                     //Undefined
                     else {
@@ -416,13 +395,13 @@ public class Client extends Thread {
         try {
             BufferedReader br = new BufferedReader(new FileReader(new File("message")));
             String msg = br.readLine();
-            for(Client c: clientConnections)
-                c.send("Message "+msg);
+            sendAll("Message "+msg);
+            
             int sleep=Integer.parseInt(br.readLine());
             TakServer.Log("sleeping "+sleep+" seconds");
             Thread.sleep(sleep);
-            for(Client c: clientConnections)
-                c.send("Message "+br.readLine());
+            sendAll("Message "+br.readLine());
+            
             TakServer.Log("Exiting");
         } catch (IOException | NumberFormatException | InterruptedException ex) {
             TakServer.Log(ex);

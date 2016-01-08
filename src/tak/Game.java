@@ -33,10 +33,12 @@ public class Game {
     int whiteTilesCount;
     int blackTilesCount;
     
+    boolean abandoned;
+    
     Set<Client> spectators;
     
     public enum gameS {WHITE_ROAD, BLACK_ROAD, WHITE_TILE, BLACK_TILE, DRAW,
-                        NONE};
+                        WHITE, BLACK, NONE};
     List<String> moveList;
     gameS gameState;
     
@@ -122,6 +124,7 @@ public class Game {
         whiteTilesCount = blackTilesCount = tilesCount;
         
         moveCount = 0;
+        abandoned = false;
         board = new Square[boardSize][boardSize];
         no = ++gameNo;
         gameState = gameS.NONE;
@@ -164,8 +167,8 @@ public class Game {
     }
     
     void sendMoveListTo(Client c) {
-        for(String st:moveList)
-            c.send(st);
+        for(String move:moveList)
+            c.send("Game#"+no+" "+move);
     }
     
     String shortDesc(){
@@ -297,10 +300,15 @@ public class Game {
             
             sq.add(ch);
             moveCount++;
+            String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
+            moveList.add(move);
+            sendMove(c, move);
             
             checkRoadWin();
             checkOutOfPieces();
             checkOutOfSquares();
+            whenGameEnd();
+            
             return new Status(true);
         } else {
             return new Status("Square not empty", false);
@@ -364,7 +372,7 @@ public class Game {
         return ret;
     }
     
-    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) { 
+    Status moveMove(Client c, char f1, int r1, char f2, int r2, int[] vals) {
 //        System.out.print("moveMove "+f1+""+r1+"->"+f2+""+r2+" ");
 //        for(int i:vals)
 //            System.out.print(i);
@@ -467,10 +475,73 @@ public class Game {
             }
         }
         moveCount++;
+        
+        String move = "M "+f1+r1+" "+f2+r2+" ";
+        for(int val: vals)
+            move+=val;
+        moveList.add(move);
+        sendMove(c, move);
+        
         checkRoadWin();
         checkOutOfSquares();
+        whenGameEnd();
+        
         return new Status(true);
     }
+    
+    void whenGameEnd() {
+        if(gameState==gameS.NONE)
+            return;
+        String msg="";
+        switch(gameState) {
+            case DRAW: msg+= "1/2-1/2"; break;
+            case WHITE_ROAD: msg+="R-0"; break;
+            case BLACK_ROAD: msg+="0-R"; break;
+            case WHITE_TILE: msg+="F-0"; break;
+            case BLACK_TILE: msg+="0-F"; break;
+            case WHITE: msg+="1-0"; break;
+            case BLACK: msg+="0-1"; break;
+        }
+        moveList.add(msg);
+        
+        if(gameState!=gameS.WHITE && gameState!=gameS.BLACK)
+            msg = "Game#"+no+" Over "+msg;
+        else {
+            Player abandoningPlayer;
+            if(gameState==gameS.WHITE)
+                abandoningPlayer = black.player;
+            else
+                abandoningPlayer = white.player;
+            
+            msg = "Game#"+no+" Abandoned. "+abandoningPlayer.getName()+" quit";
+        }
+        
+        if(gameState!=gameS.BLACK)
+            white.send(msg);
+        if(gameState!=gameS.WHITE)
+            black.send(msg);
+        sendToSpectators(msg);
+        
+        saveToDB();
+    }
+    
+    void saveToDB() {
+        
+    }
+    
+    void sendMove(Client c, String move) {
+        String msg="Game#"+no+" "+move;
+        sendToOtherClient(c, msg);
+        sendToSpectators(msg);
+    }
+    
+    void sendToOtherClient(Client c, String move) {
+        if(white==c)
+            black.send(move);
+        else
+            white.send(move);
+    }
+    
     void sendToSpectators(final String msg) {
         new Thread() {
             @Override
@@ -622,10 +693,10 @@ public class Game {
     
     void clientQuit(Client c) {
         Client otherClient = (c==white)?black:white;
+        abandoned = true;
         otherClient.game = null;
-        String msg = "Game#"+no+" Abandoned. "+c.player.getName()+" quit";
-        otherClient.send(msg);
-        sendToSpectators(msg);
+        gameState = (c==white)?gameS.BLACK:gameS.WHITE;
+        whenGameEnd();
     }
     
     class SquareIterator {
