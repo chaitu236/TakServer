@@ -77,10 +77,10 @@ public class Player {
         Player np = new Player(name, email, new BigInteger(130, random).toString(32));
         try {
             Statement stmt = Database.connection.createStatement();
-            String sql = "INSERT INTO PLAYERS (ID,NAME,PASSWORD,EMAIL,R4,R5,R6,R7,R8) "+
+            String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
                     "VALUES ("+np.id+",'"+np.name+"','"+np.password+"','"+np.email+"',"+
                     np.r4+","+np.r5+","+np.r6+","+np.r7+","+np.r8+");";
-            System.out.println("SQL:: "+sql);
+            //System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
             stmt.close();
             
@@ -102,7 +102,7 @@ public class Player {
         Statement stmt;
         try {
             stmt = Database.connection.createStatement();
-            String sql = "UPDATE PLAYERS set R4 = "+r4+" where ID="+id+";";
+            String sql = "UPDATE players set r4 = "+r4+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -114,7 +114,7 @@ public class Player {
         Statement stmt;
         try {
             stmt = Database.connection.createStatement();
-            String sql = "UPDATE PLAYERS set R5 = "+r5+" where ID="+id+";";
+            String sql = "UPDATE players set r5 = "+r5+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -126,7 +126,7 @@ public class Player {
         Statement stmt;
         try {
             stmt = Database.connection.createStatement();
-            String sql = "UPDATE PLAYERS set R6 = "+r6+" where ID="+id+";";
+            String sql = "UPDATE players set r6 = "+r6+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -138,7 +138,7 @@ public class Player {
         Statement stmt;
         try {
             stmt = Database.connection.createStatement();
-            String sql = "UPDATE PLAYERS set R7 = "+r7+" where ID="+id+";";
+            String sql = "UPDATE players set r7 = "+r7+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -150,7 +150,7 @@ public class Player {
         Statement stmt;
         try {
             stmt = Database.connection.createStatement();
-            String sql = "UPDATE PLAYERS set R8 = "+r8+" where ID="+id+";";
+            String sql = "UPDATE players set r8 = "+r8+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -196,7 +196,7 @@ public class Player {
     public static void loadFromDB() {
         idCount=0;
         try (Statement stmt = Database.connection.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT * FROM PLAYERS;")) {
+                ResultSet rs = stmt.executeQuery("SELECT * FROM players;")) {
             while(rs.next()) {
                 Player np = new Player(rs.getString("name"),
                         rs.getString("email"),
@@ -208,7 +208,7 @@ public class Player {
                         rs.getInt("r7"),
                         rs.getInt("r8"));
 
-                System.out.println("Read player "+np);
+                //System.out.println("Read player "+np);
                 players.put(np.name, np);
                 if(idCount<np.id)
                     idCount++;
@@ -223,26 +223,26 @@ public class Player {
         Database.initConnection();
 //        try {
 //            Statement stmt = Database.connection.createStatement();
-//            stmt.executeUpdate("CREATE TABLE PLAYERS " +
-//                    "(ID INT PRIMARY KEY," +
-//                    " NAME VARCHAR(20)," +
-//                    " PASSWORD VARCHAR(50),"+
-//                    " EMAIL VARCHAR(50),"+
-//                    " R4 INT," +
-//                    " R5 INT," +
-//                    " R6 INT," +
-//                    " R7 INT," +
-//                    " R8 INT)");
+//            stmt.executeUpdate("CREATE TABLE players " +
+//                    "(id INT PRIMARY KEY," +
+//                    " name VARCHAR(20)," +
+//                    " password VARCHAR(50),"+
+//                    " email VARCHAR(50),"+
+//                    " r4 INT," +
+//                    " r5 INT," +
+//                    " r6 INT," +
+//                    " r7 INT," +
+//                    " r8 INT)");
 //            
 //            stmt.close();
 //        } catch (SQLException ex) {
 //            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
 //        }
-        
-//        createPlayer("player1", "player1@playtak.com");
-//        createPlayer("player2", "player2@playtak.com");
-//        createPlayer("player3", "player3@playtak.com");
- 
+//        
+//        createPlayer("kaka", "kaka@playtak.com");
+//        createPlayer("kaki", "kaki@playtak.com");
+//        createPlayer("baba", "baba@playtak.com");
+
         loadFromDB();
         
         //Test update

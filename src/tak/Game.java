@@ -5,6 +5,8 @@
  */
 package tak;
 
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -15,6 +17,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -497,15 +501,8 @@ public class Game {
         if(gameState==gameS.NONE)
             return;
         String msg="";
-        switch(gameState) {
-            case DRAW: msg+= "1/2-1/2"; break;
-            case WHITE_ROAD: msg+="R-0"; break;
-            case BLACK_ROAD: msg+="0-R"; break;
-            case WHITE_TILE: msg+="F-0"; break;
-            case BLACK_TILE: msg+="0-F"; break;
-            case WHITE: msg+="1-0"; break;
-            case BLACK: msg+="0-1"; break;
-        }
+        msg += gameStateString();
+        
         
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;
@@ -528,8 +525,42 @@ public class Game {
         saveToDB();
     }
     
+    private String moveListString() {
+        StringBuilder sb = new StringBuilder();
+        String prefix = "";
+        for(String move: moveList) {
+            sb.append(prefix);
+            prefix = ",";
+            sb.append(move);
+        }
+        return sb.toString();
+    }
+    
+    private String gameStateString() {
+        switch(gameState) {
+            case DRAW: return "1/2-1/2";
+            case WHITE_ROAD: return "R-0";
+            case BLACK_ROAD: return "0-R";
+            case WHITE_TILE: return "F-0";
+            case BLACK_TILE: return "0-F";
+            case WHITE: return "1-0";
+            case BLACK: return "0-1";
+            default: return "---";
+        }
+    }
+    
     void saveToDB() {
-        
+        try {
+            Statement stmt = Database.connection.createStatement();
+            String sql = "INSERT INTO games "+
+                    "VALUES (NULL,"+time+","+boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
+                    gameStateString()+"');";
+            //System.out.println("SQL:: "+sql);
+            stmt.executeUpdate(sql);
+            stmt.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     void sendMove(Player p, String move) {
@@ -756,6 +787,25 @@ public class Game {
         }
         void reset() {
             count = 0;
+        }
+    }
+    public static void main(String[] args) {
+        Database.initConnection();
+        try {
+            Statement stmt = Database.connection.createStatement();
+            stmt.executeUpdate("CREATE TABLE games " +
+                    "(id INTEGER PRIMARY KEY," +
+                    " date INT," +
+                    " size INT," +
+                    " player_white VARCHAR(20)," +
+                    " player_black VARCHAR(20)," +
+                    " notation TEXT," +
+                    " result VARCAR(10));"
+                    );
+            
+            stmt.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }
