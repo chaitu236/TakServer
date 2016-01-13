@@ -118,7 +118,7 @@ public class Client extends Thread {
         Seek.registerListener(this);
         Game.registerGameListListener(this);
         spectating = new ArrayList<>();
-        Log("Connected");
+        Log("Connected "+socket.getRemoteSocketAddress());
     }
 
     void sendOK() {
