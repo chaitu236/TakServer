@@ -265,6 +265,7 @@ public class Client extends Thread {
                         int no = Integer.parseInt(m.group(1));
                         if(no == 0) {
                             Log("Seek remove");
+                            seek = null;
                         } else {
                             seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
                             Log("Seek "+seek.boardSize);
