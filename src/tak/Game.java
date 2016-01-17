@@ -39,6 +39,8 @@ public class Game {
     int whiteTilesCount;
     int blackTilesCount;
     
+    Player drawOfferedBy;
+    
     boolean abandoned;
     
     Set<Client> spectators;
@@ -136,6 +138,8 @@ public class Game {
         board = new Square[boardSize][boardSize];
         no = ++gameNo;
         gameState = gameS.NONE;
+        drawOfferedBy = null;
+        
         moveList = Collections.synchronizedList(new ArrayList<String>());
 
         for (int i = 0; i < b; i++) {
@@ -165,6 +169,34 @@ public class Game {
         sendMoveListTo(c);
         spectators.add(c);
     }
+    
+    void resign(Player p) {
+        if(p == white)
+            gameState = gameS.BLACK;
+        else
+            gameState = gameS.WHITE;
+        whenGameEnd();
+    }
+    
+    void draw(Player p) {
+        if(drawOfferedBy == null) {
+            drawOfferedBy = p;
+            Player otherPlayer = (p==white)?black:white;
+            otherPlayer.getClient().send("Game#"+no+" OfferDraw");
+        } else if(drawOfferedBy!=p) {
+            gameState = gameS.DRAW;
+            whenGameEnd();
+        }
+    }
+    
+    void removeDraw(Player p) {
+        if(drawOfferedBy == p) {
+            drawOfferedBy = null;
+            Player otherPlayer = (p==white)?black:white;
+            otherPlayer.getClient().send("Game#"+no+" RemoveDraw");
+        }
+    }
+    
     void unSpectate(Client c) {
         spectators.remove(c);
     }
@@ -502,7 +534,6 @@ public class Game {
             return;
         String msg="";
         msg += gameStateString();
-        
         
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;

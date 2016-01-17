@@ -56,6 +56,15 @@ public class Client extends Thread {
 
     String moveString = "^Game#(\\d+) M ([A-Z])(\\d) ([A-Z])(\\d)(( \\d)+)";
     Pattern movePattern;
+    
+    String drawString = "^Game#(\\d+) OfferDraw";
+    Pattern drawPattern;
+    
+    String removeDrawString = "^Game#(\\d+) RemoveDraw";
+    Pattern removeDrawPattern;
+    
+    String resignString = "^Game#(\\d+) Resign";
+    Pattern resignPattern;
 
     String seekString = "^Seek (\\d)";
     Pattern seekPattern;
@@ -98,6 +107,9 @@ public class Client extends Thread {
         clientPattern = Pattern.compile(clientString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
+        drawPattern = Pattern.compile(drawString);
+        removeDrawPattern = Pattern.compile(removeDrawString);
+        resignPattern = Pattern.compile(resignString);
         seekPattern = Pattern.compile(seekString);
         acceptSeekPattern = Pattern.compile(acceptSeekString);
         listPattern = Pattern.compile(listString);
@@ -334,6 +346,30 @@ public class Client extends Thread {
                         } else {
                             sendNOK();
                             send("Error:"+st.msg());
+                        }
+                    }
+                    //Handle draw offer
+                    else if (game!=null && (m = drawPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        game.draw(player);
+                        Client other = (game.white==player)?game.black.getClient():game.white.getClient();
+                        if(game.gameState!=Game.gameS.NONE){
+                            Game.removeGame(game);
+                            game = null;
+                            other.game = null;
+                        }
+                    }
+                    //Handle removing draw offer
+                    else if (game!=null && (m = removeDrawPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        game.removeDraw(player);
+                    }
+                    //Handle resignation
+                    else if (game!=null && (m = resignPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        game.resign(player);
+                        Client other = (game.white==player)?game.black.getClient():game.white.getClient();
+                        if(game.gameState!=Game.gameS.NONE){
+                            Game.removeGame(game);
+                            game = null;
+                            other.game = null;
                         }
                     }
                     //Show game state
