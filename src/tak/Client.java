@@ -93,6 +93,9 @@ public class Client extends Thread {
     String shoutString = "Shout ([^\n\r]{1,256})";
     Pattern shoutPattern;
     
+    String pingString = "^PING$";
+    Pattern pingPattern;
+    
     Client(Socket socket) {
         this.socket = socket;
         try {
@@ -119,6 +122,7 @@ public class Client extends Thread {
         unobservePattern = Pattern.compile(unobserveString);
         getSqStatePattern = Pattern.compile(getSqStateString);
         shoutPattern = Pattern.compile(shoutString);
+        pingPattern = Pattern.compile(pingString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -143,6 +147,11 @@ public class Client extends Thread {
 
     void send(String st) {
         Log("Send:"+st);
+        clientWriter.println(st);
+        clientWriter.flush();
+    }
+    
+    void sendWithoutLogging(String st) {
         clientWriter.println(st);
         clientWriter.flush();
     }
@@ -214,6 +223,11 @@ public class Client extends Thread {
             send("Login or Register");
             while ((temp = clientReader.readLine()) != null && !temp.equals("quit")) {
                 temp = temp.trim();
+                //don't log ping patterns
+                if((pingPattern.matcher(temp)).find()) {
+                    sendWithoutLogging("OK");
+                    continue;
+                }
                 Log("Read:"+temp);
                 
                 Matcher m;

@@ -125,7 +125,7 @@ public class Game {
         int tilesCount=0;
         switch(b) {
             case 4: capstonesCount = 0; tilesCount = 15; break;
-            case 5: capstonesCount = 1; tilesCount = 20; break;
+            case 5: capstonesCount = 1; tilesCount = 21; break;
             case 6: capstonesCount = 1; tilesCount = 30; break;
             case 7: capstonesCount = 2; tilesCount = 40; break;
             case 8: capstonesCount = 2; tilesCount = 50; break;
