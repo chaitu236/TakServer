@@ -45,6 +45,9 @@ public class Client extends Thread {
     String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([a-zA-Z0-9_]{3,50})";
     Pattern loginPattern;
     
+    String loginGuestString = "^Login Guest";
+    Pattern loginGuestPattern;
+    
     String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([A-Za-z.0-9_-]{1,30}@[A-Za-z.0-9_-]{3,30})";
     Pattern registerPattern;
     
@@ -90,7 +93,7 @@ public class Client extends Thread {
     String getSqStateString = "^Game#(\\d+) Show ([A-Z])(\\d)";
     Pattern getSqStatePattern;
     
-    String shoutString = "Shout ([^\n\r]{1,256})";
+    String shoutString = "^Shout ([^\n\r]{1,256})";
     Pattern shoutPattern;
     
     String pingString = "^PING$";
@@ -123,6 +126,7 @@ public class Client extends Thread {
         getSqStatePattern = Pattern.compile(getSqStateString);
         shoutPattern = Pattern.compile(shoutString);
         pingPattern = Pattern.compile(pingString);
+        loginGuestPattern = Pattern.compile(loginGuestString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -237,6 +241,17 @@ public class Client extends Thread {
                     if((m = clientPattern.matcher(temp)).find()){
                         Log("Client "+m.group(1));
                     }
+                    //Login Guest
+                    else if ((loginGuestPattern.matcher(temp)).find()) {
+                        player = new Player();
+                        player.login(this);
+
+                        send("Welcome "+player.getName()+"!");
+                        Log("Player logged in");
+                        Seek.sendListTo(this);
+                        Game.sendGameListTo(this);
+                        sendAllOnline("Online "+(++onlineClients));
+                    }
                     //Login
                     else if ((m = loginPattern.matcher(temp)).find()) {
                         String tname = m.group(1).trim();
@@ -244,7 +259,7 @@ public class Client extends Thread {
                             if (Player.players.containsKey(tname)) {
                                 Player tplayer = Player.players.get(tname);
                                 String pass = m.group(2).trim();
-                                
+
                                 if(!pass.equals(tplayer.getPassword())) {
                                     send("Authentication failure");
                                 } else if(tplayer.isLoggedIn()) {
@@ -252,7 +267,7 @@ public class Client extends Thread {
                                 } else {
                                     player = tplayer;
                                     player.login(this);
-                                    
+
                                     send("Welcome "+player.getName()+"!");
                                     Log("Player logged in");
                                     Seek.sendListTo(this);
@@ -266,14 +281,18 @@ public class Client extends Thread {
                     //Registration
                     else if ((m = registerPattern.matcher(temp)).find()) {
                         String tname = m.group(1).trim();
-                        synchronized(Player.players) {
-                            if (Player.players.containsKey(tname)) {
-                                send("Name already taken");
-                            }
-                            else {
-                                String email = m.group(2).trim();
-                                Player tplayer = Player.createPlayer(tname, email);
-                                send("Registered "+tplayer.getName()+". Check your email for password");
+                        if(tname.toLowerCase().contains("guest")) {
+                            send("Can't register with guest in the name");
+                        } else {
+                            synchronized(Player.players) {
+                                if (Player.players.containsKey(tname)) {
+                                    send("Name already taken");
+                                }
+                                else {
+                                    String email = m.group(2).trim();
+                                    Player tplayer = Player.createPlayer(tname, email);
+                                    send("Registered "+tplayer.getName()+". Check your email for password");
+                                }
                             }
                         }
                     } else

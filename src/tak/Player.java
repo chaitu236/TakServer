@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 public class Player {
     public static HashMap<String, Player> players = new HashMap<>();
     static int idCount=0;
+    static int guestCount=0;
     
     private String name;
     private String password;
@@ -34,11 +35,12 @@ public class Player {
     private int r7;
     private int r8;
     
+    private boolean guest;
     //variables not in database
     private Client client;
     
     Player(String name, String email, String password, int id, int r4, int r5,
-                        int r6, int r7, int r8) {
+                        int r6, int r7, int r8, boolean guest) {
         this.name = name;
         this.email = email;
         this.password = password;
@@ -48,6 +50,7 @@ public class Player {
         this.r6 = r6;
         this.r7 = r7;
         this.r8 = r8;
+        this.guest = guest;
         
         client = null;
     }
@@ -64,8 +67,12 @@ public class Player {
         this.client = null;
     }
     
-    Player(String name, String email, String password) {
-        this(name, email, password, ++idCount, 0, 0, 0, 0, 0);
+    Player(String name, String email, String password, boolean guest) {
+        this(name, email, password, ++idCount, 0, 0, 0, 0, 0, guest);
+    }
+    
+    Player() {
+        this("Guest"+(++guestCount), "", "", true);
     }
     
     Client getClient() {
@@ -74,7 +81,7 @@ public class Player {
     
     static SecureRandom random = new SecureRandom();
     public static Player createPlayer(String name, String email) {
-        Player np = new Player(name, email, new BigInteger(130, random).toString(32));
+        Player np = new Player(name, email, new BigInteger(130, random).toString(32), false);
         try {
             Statement stmt = Database.connection.createStatement();
             String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
@@ -206,7 +213,8 @@ public class Player {
                         rs.getInt("r5"),
                         rs.getInt("r6"),
                         rs.getInt("r7"),
-                        rs.getInt("r8"));
+                        rs.getInt("r8"),
+                        false);
 
                 //System.out.println("Read player "+np);
                 players.put(np.name, np);
