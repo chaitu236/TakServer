@@ -48,8 +48,11 @@ public class Client extends Thread {
     String loginGuestString = "^Login Guest";
     Pattern loginGuestPattern;
     
-    String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([A-Za-z.0-9_-]{1,30}@[A-Za-z.0-9_-]{3,30})";
+    String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([A-Za-z.0-9_+!#$%&'*^?=-]{1,30}@[A-Za-z.0-9-]{3,30})";
     Pattern registerPattern;
+    
+    String wrongRegisterString = "^Register [^\n\r]{1,256}";
+    Pattern wrongRegisterPattern;
     
     String clientString = "^Client ([A-Za-z-.0-9]{4,15})";
     Pattern clientPattern;
@@ -116,6 +119,7 @@ public class Client extends Thread {
         drawPattern = Pattern.compile(drawString);
         removeDrawPattern = Pattern.compile(removeDrawString);
         resignPattern = Pattern.compile(resignString);
+        wrongRegisterPattern = Pattern.compile(wrongRegisterString);
         seekPattern = Pattern.compile(seekString);
         acceptSeekPattern = Pattern.compile(acceptSeekString);
         listPattern = Pattern.compile(listString);
@@ -295,7 +299,12 @@ public class Client extends Thread {
                                 }
                             }
                         }
-                    } else
+                    }
+                    //Wrong registration chars
+                    else if ((wrongRegisterPattern.matcher(temp)).find()) {
+                        send("Unknown characters in username/email. Only [a-z][A-Z][0-9][_] allowed for username, it should be 4-9 characters and should start with letter");
+                    }
+                    else
                         send("Login or Register");
                 } else {
                     //List all seeks
