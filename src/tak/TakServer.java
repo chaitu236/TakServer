@@ -41,6 +41,8 @@ public class TakServer extends Thread{
         Database.initConnection();
         Player.loadFromDB();
         
+        IRCBridge.init();
+        
         if(args.length>0)
             port = Integer.parseInt(args[0]);
         

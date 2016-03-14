@@ -451,7 +451,9 @@ public class Client extends Thread {
                     }
                     //Shout
                     else if ((m=shoutPattern.matcher(temp)).find()){
-                        sendAllOnline("Shout "+player.getName()+": "+m.group(1));
+                        String msg = player.getName()+": "+m.group(1);
+                        sendAllOnline("Shout "+msg);
+                        IRCBridge.send(msg);
                     }
                     //Undefined
                     else {
