@@ -518,8 +518,8 @@ public class Game {
         
         String move = "M "+f1+r1+" "+f2+r2+" ";
         for(int val: vals)
-            move+=val;
-        moveList.add(move);
+            move+=val+" ";
+        moveList.add(move.trim());
         sendMove(p, move);
         
         checkRoadWin();
