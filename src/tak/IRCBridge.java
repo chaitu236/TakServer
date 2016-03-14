@@ -25,7 +25,7 @@ public class IRCBridge {
     public static final String server = "irc.freenode.net";
     public static final String nick = "playtak";
     public static final String login = "playtak.com";
-    public static final String channel = "#playtaktest";
+    public static final String channel = "#tak";
 
     private static boolean connected = false;
 
