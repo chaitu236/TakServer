@@ -71,14 +71,10 @@ public class IRCBridge {
                             writer.write("PRIVMSG " + channel + " :I got pinged!\r\n");
                             writer.flush();
                         } else {
-                            // Print the raw line received by the bot.
-                            System.out.println(line);
                             if(line.contains("PRIVMSG "+channel)) {
                                 String user = line.split("!")[0].split(":")[1];
                                 String msg = line.split("PRIVMSG "+channel+" :")[1];
-                                System.out.println("user = "+user);
-                                System.out.println("msg = "+msg);
-                                Client.sendAllOnline("Shout IRC: "+user+": "+msg);
+                                Client.sendAllOnline("Shout <IRC> <"+user+"> "+msg);
                             }
                         }
                     }
@@ -91,7 +87,6 @@ public class IRCBridge {
     public static void send(String msg) {
         if (connected && writer != null) {
             writer.write("PRIVMSG " + channel + " :" + msg + "\r\n");
-            System.out.println("writingn "+"PRIVMSG " + channel + " " + msg + "\r\n");
             writer.flush();
         }
     }
