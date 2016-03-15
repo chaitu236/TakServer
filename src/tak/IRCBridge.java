@@ -65,10 +65,9 @@ public class IRCBridge {
 
                     // Keep reading lines from the server.
                     while ((line = reader.readLine()) != null) {
-                        if (line.toLowerCase().startsWith("PING ")) {
+                        if (line.toUpperCase().startsWith("PING ")) {
                             // We must respond to PINGs to avoid being disconnected.
                             writer.write("PONG " + line.substring(5) + "\r\n");
-                            writer.write("PRIVMSG " + channel + " :I got pinged!\r\n");
                             writer.flush();
                         } else {
                             if(line.contains("PRIVMSG "+channel)) {
@@ -79,6 +78,7 @@ public class IRCBridge {
                         }
                     }
                 } catch (Exception e) {
+                    System.err.println(e);
                 }
             }
         }.start();
