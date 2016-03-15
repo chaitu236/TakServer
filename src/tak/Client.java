@@ -72,7 +72,7 @@ public class Client extends Thread {
     String resignString = "^Game#(\\d+) Resign";
     Pattern resignPattern;
 
-    String seekString = "^Seek (\\d)";
+    String seekString = "^Seek (\\d) (\\d+)";
     Pattern seekPattern;
 
     String acceptSeekString = "^Accept (\\d+)";
@@ -222,6 +222,10 @@ public class Client extends Thread {
     void Log(Object obj) {
         TakServer.Log(clientNo+":"+((player!=null)?player.getName():"")+":"+obj);
     }
+    
+    void removeGame(Game g) {
+        game = null;
+    }
 
     @Override
     public void run() {
@@ -321,7 +325,7 @@ public class Client extends Thread {
                             Log("Seek remove");
                             seek = null;
                         } else {
-                            seek = Seek.newSeek(this, Integer.parseInt(m.group(1)));
+                            seek = Seek.newSeek(this, Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
                             Log("Seek "+seek.boardSize);
                         }
                         sendOK();
@@ -334,6 +338,7 @@ public class Client extends Thread {
 
                             Client otherClient = sk.client;
                             int sz = sk.boardSize;
+                            int time = sk.time;
                             otherClient.removeSeeks();
 
                             spectating.clear();
@@ -341,14 +346,14 @@ public class Client extends Thread {
                             otherClient.unspectateAll();
                             otherClient.spectating.clear();
                             
-                            game = new Game(player, otherClient.player, sz);
+                            game = new Game(player, otherClient.player, sz, time);
                             Game.addGame(game);
                             otherClient.game = game;
                             
                             sendOK();
                             String msg = "Game Start " + game.no +" "+sz+" "+game.white.getName()+" vs "+game.black.getName();
-                            send(msg+" "+((game.white==player)?"white":"black"));
-                            otherClient.send(msg+" "+((game.white==otherClient.player)?"white":"black"));
+                            send(msg+" "+((game.white==player)?"white":"black")+" "+time);
+                            otherClient.send(msg+" "+((game.white==otherClient.player)?"white":"black")+" "+time);
                         } else {
                             sendNOK();
                         }

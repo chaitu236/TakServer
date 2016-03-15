@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,6 +40,13 @@ public class Game {
     
     int whiteTilesCount;
     int blackTilesCount;
+    
+    //time in milli seconds
+    long originalTime;
+    long whiteTime;
+    long blackTime;
+    long lastUpdateTime;
+    Timer timer;
     
     Player drawOfferedBy;
     
@@ -109,10 +118,14 @@ public class Game {
     static final char WALL='w';
     static final char CAPSTONE='c';
 
-    Game(Player p1, Player p2, int b) {
+    Game(Player p1, Player p2, int b, int t) {
         int rand = new Random().nextInt(99);
         white = (rand>=50)?p1:p2;
         black = (rand>=50)?p2:p1;
+        
+        originalTime = whiteTime = blackTime = t*1000;
+        
+        timer = new Timer();
         
         time = System.currentTimeMillis();
 
@@ -149,10 +162,6 @@ public class Game {
         }
         spectators = Collections.synchronizedSet(new HashSet<Client>());
     }
-
-    Game(Player p1, Player p2) {
-        this(p1, p2, DEFAULT_SIZE);
-    }
     
     static void addGame(Game g) {
         Game.games.put(g.no, g);
@@ -168,6 +177,7 @@ public class Game {
         c.send("Observe "+shortDesc());
         sendMoveListTo(c);
         spectators.add(c);
+        updateTime(c);
     }
     
     void resign(Player p) {
@@ -215,6 +225,7 @@ public class Game {
         StringBuilder sb=new StringBuilder("Game#"+no+" ");
         sb.append(white.getName()).append(" vs ").append(black.getName());
         sb.append(", ").append(boardSize).append("x").append(boardSize).append(", ");
+        sb.append(originalTime/1000+", ");
         sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
         return sb.toString();
     }
@@ -292,6 +303,76 @@ public class Game {
         }
     }
     
+    void timeCleanup() {
+        white.getClient().removeGame(this);
+        black.getClient().removeGame(this);
+        Game.removeGame(this);
+    }
+    
+    void updateTime(Client c) {
+        if(whiteTime == -1 || moveCount == 0)
+            return;
+        
+        long curTime = System.nanoTime();
+        long elapsedMS = (curTime - lastUpdateTime)/1000000;
+        long timeToCount=0;
+        
+        if(!isWhitesTurn()) {
+            blackTime -= elapsedMS;
+        } else {
+            whiteTime -= elapsedMS;
+        }
+        
+        lastUpdateTime = curTime;
+
+        String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
+        c.send(msg);
+    }
+    
+    void updateTimeTurnChange() {
+        if(whiteTime == -1)
+            return;
+        //start time after 1st move is played
+        if(moveCount == 1) {
+            this.lastUpdateTime = System.nanoTime();
+        }
+        
+        long curTime = System.nanoTime();
+        long elapsedMS = (curTime - lastUpdateTime)/1000000;
+        long timeToCount=0;
+        
+        if(isWhitesTurn()) {
+            blackTime -= elapsedMS;
+            timeToCount = whiteTime;
+        } else {
+            whiteTime -= elapsedMS;
+            timeToCount = blackTime;
+        }
+        
+        lastUpdateTime = curTime;
+        if(timeToCount<0)
+            timeToCount = 0;
+        
+        timer.cancel();
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(isWhitesTurn()) {
+                    gameState = gameS.BLACK;
+                } else {
+                    gameState = gameS.WHITE;
+                }
+                whenGameEnd();
+                timeCleanup();
+            }
+        }, timeToCount);
+        String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
+        white.getClient().send(msg);
+        black.getClient().send(msg);
+        sendToSpectators(msg);
+    }
+    
     Status placeMove(Player p, char file, int rank, boolean capstone,
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
@@ -349,6 +430,7 @@ public class Game {
             checkOutOfSquares();
             whenGameEnd();
             
+            updateTimeTurnChange();
             return new Status(true);
         } else {
             return new Status("Square not empty", false);
@@ -534,6 +616,7 @@ public class Game {
             return;
         String msg="";
         msg += gameStateString();
+        timer.cancel();
         
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;

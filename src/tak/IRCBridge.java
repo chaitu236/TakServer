@@ -44,6 +44,7 @@ public class IRCBridge {
                     writer.write("USER " + login + " 8 * : Java IRC Hacks Bot\r\n");
                     writer.flush();
 
+                    System.out.println("Connecting to irc "+channel);
                     // Read lines from the server until it tells us we have connected.
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -60,7 +61,7 @@ public class IRCBridge {
                     // Join the channel.
                     writer.write("JOIN " + channel + "\r\n");
                     writer.flush();
-                    System.out.println("connected to irc");
+                    System.out.println("Connected to irc "+channel);
                     connected = true;
 
                     // Keep reading lines from the server.

@@ -20,21 +20,23 @@ public class Seek {
     Client client;
     int boardSize;
     int no;
+    int time;//time in seconds for each side
     
     static int seekNo=0;
     
     static Map<Integer, Seek> seeks = Collections.synchronizedMap(new HashMap<Integer, Seek>());
     static Set<Client> seekListeners = Collections.synchronizedSet(new HashSet<Client>());
     
-    static Seek newSeek(Client c, int b) {
-        Seek sk = new Seek(c, b);
+    static Seek newSeek(Client c, int b, int t) {
+        Seek sk = new Seek(c, b, t);
         addSeek(sk);
         return sk;
     }
     
-    Seek(Client c, int b) {
+    Seek(Client c, int b, int t) {
         client = c;
         no = ++seekNo;
+        time = t;
         
         if (b < 4 || b > 8)
             b = DEFAULT_SIZE;
@@ -77,6 +79,6 @@ public class Seek {
     }
     @Override
     public String toString() {
-        return no+" "+client.player.getName()+" "+boardSize;
+        return no+" "+client.player.getName()+" "+boardSize+" "+time;
     }
 }

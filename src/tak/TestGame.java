@@ -27,7 +27,7 @@ public class TestGame {
     
     Game game;
     TestGame(int boardSize) {
-        game = new Game(null, null, boardSize);
+        game = new Game(null, null, boardSize, 180);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
     }
