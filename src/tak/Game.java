@@ -330,7 +330,7 @@ public class Game {
     }
     
     void updateTimeTurnChange() {
-        if(whiteTime == -1)
+        if(whiteTime == -1 || gameState!=gameS.NONE)
             return;
         //start time after 1st move is played
         if(moveCount == 1) {
@@ -607,6 +607,8 @@ public class Game {
         checkRoadWin();
         checkOutOfSquares();
         whenGameEnd();
+        
+        updateTimeTurnChange();
         
         return new Status(true);
     }
