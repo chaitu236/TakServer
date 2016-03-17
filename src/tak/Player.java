@@ -68,7 +68,7 @@ public class Player {
     }
     
     Player(String name, String email, String password, boolean guest) {
-        this(name, email, password, ++idCount, 0, 0, 0, 0, 0, guest);
+        this(name, email, password, guest?0:++idCount, 0, 0, 0, 0, 0, guest);
     }
     
     Player() {
@@ -219,7 +219,7 @@ public class Player {
                 //System.out.println("Read player "+np);
                 players.put(np.name, np);
                 if(idCount<np.id)
-                    idCount++;
+                    idCount=np.id;
                 
             }
         } catch (SQLException ex) {
