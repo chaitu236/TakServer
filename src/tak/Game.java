@@ -422,8 +422,8 @@ public class Game {
             sq.add(ch);
             moveCount++;
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
-            moveList.add(move);
-            sendMove(p, move);
+            moveList.add(move.trim());
+            sendMove(p, move.trim());
             
             checkRoadWin();
             checkOutOfPieces();
