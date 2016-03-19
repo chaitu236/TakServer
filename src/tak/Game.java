@@ -602,7 +602,7 @@ public class Game {
         for(int val: vals)
             move+=val+" ";
         moveList.add(move.trim());
-        sendMove(p, move);
+        sendMove(p, move.trim());
         
         checkRoadWin();
         checkOutOfSquares();
