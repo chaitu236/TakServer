@@ -42,13 +42,13 @@ public class Client extends Thread {
     Seek seek = null;
     ArrayList<Game> spectating;
 
-    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([a-zA-Z0-9_]{3,50})";
+    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([a-zA-Z0-9_]{3,50})";
     Pattern loginPattern;
     
     String loginGuestString = "^Login Guest";
     Pattern loginGuestPattern;
     
-    String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,9}) ([A-Za-z.0-9_+!#$%&'*^?=-]{1,30}@[A-Za-z.0-9-]{3,30})";
+    String registerString = "^Register ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([A-Za-z.0-9_+!#$%&'*^?=-]{1,30}@[A-Za-z.0-9-]{3,30})";
     Pattern registerPattern;
     
     String wrongRegisterString = "^Register [^\n\r]{1,256}";
@@ -173,7 +173,8 @@ public class Client extends Thread {
     
     void unspectateAll() {
         for(Game g: spectating)
-            g.spectators.remove(this);
+            g.unSpectate(this);
+        spectating.clear();
     }
     
     static void sendAll(final String msg) {
@@ -306,7 +307,7 @@ public class Client extends Thread {
                     }
                     //Wrong registration chars
                     else if ((wrongRegisterPattern.matcher(temp)).find()) {
-                        send("Unknown characters in username/email. Only [a-z][A-Z][0-9][_] allowed for username, it should be 4-9 characters and should start with letter");
+                        send("Unknown format for username/email. Only [a-z][A-Z][0-9][_] allowed for username, it should be 4-16 characters and should start with letter");
                     }
                     else
                         send("Login or Register");
@@ -342,9 +343,7 @@ public class Client extends Thread {
                             otherClient.removeSeeks();
 
                             unspectateAll();
-                            spectating.clear();
                             otherClient.unspectateAll();
-                            otherClient.spectating.clear();
                             
                             game = new Game(player, otherClient.player, sz, time);
                             Game.addGame(game);
