@@ -341,8 +341,8 @@ public class Client extends Thread {
                             int time = sk.time;
                             otherClient.removeSeeks();
 
-                            spectating.clear();
                             unspectateAll();
+                            spectating.clear();
                             otherClient.unspectateAll();
                             otherClient.spectating.clear();
                             
