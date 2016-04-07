@@ -1,58 +1,76 @@
 # TakServer
+
+*Last updated on 04/06/2016*
+
 Server to handle online TAK games
 
 The input/output of server is all text.
-When the client connects to server, it gets a "welcome!" message and a prompt for Name.
-When the client provides the name in the format specified in the table below, the server sends another welcome
-message. Until the name is given, client cannot send any other command except quit.
 
 The client to server commands and their format is as below
-(format of all squares is [Capital letter][digit]. e.g., A2, B5, C4)
+(format of all squares is [Capital letter][digit]. e.g., A2, B5, C4, row numbers start from 1)
+
+**Since the server and client are still in beta, the API is bound to change to support more features (though I would try to keep the changes to a minimum)**
 
 |Commands to server|Description|
 |-----------------|-----------|
-|Name **text**      |Sets player name to **text**|
-|List             |Gives list of all games|
-|Seek **no** |Seeks a game of board size *no*|
+|Client **client name**      |Informs the server of the client being connected from|
+|Register **username email** |Register with the given username and email|
+|Login **username password** |Login with the username and password|
+|Login Guest |Login as a guest|
+|Seek **no** **time** |Seeks a game of board size *no* with time per player *time* specified in seconds|
 |Accept **no**|Accepts the game with the game number **no**|
 |Game#**no** P **Sq** C\|W|Sends a 'Place' move to the specified game no. The optional suffix 'C' or 'W' denote if it is a capstone or a wall (standing stone)|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|Sends a 'Move' move to the specified game no. **Sq1** is beginning square, **Sq2** is ending square, **no1**, **no2**, **no3**.. are the no. of pieces dropped in the in-between squares (including the last square)|
-|Game#**no** Show |Gives the full game state of game number **no**|
-|quit |Sent by client to indicate it is going to quit. Server removes all seeks, abandons game if any|
+|Game#**no** OfferDraw |Offers the opponent draw or accepts the opponent's draw offer|
+|Game#**no** RemoveDraw |Removes your draw offer|
+|Game#**no** Resign |Resign the game|
+|Game#**no** Show |Prints a somewhat human readable game position of the game number **no**|
+|List |Send list of seeks|
+|GameList |Send list of games in progress|
+|Observe **no** |Observe the specified game. Server sends the game moves and clock info|
+|Unobserve **no** |Unobserve the specified game|
+|Game#**no** Show **Sq** |Prints the position in the specified square (this is used mainly to convert server notation to PTN notation)|
+|Shout **text** |Send text to all logged in players|
+|Ping |Pings to inform server that the client is alive. Recommended ping spacing is 30 seconds. Server may disconnect clients if pings are not received|
+|quit |Sent by client to indicate it is going to quit. Server removes all seeks, abandons (which loses) game if any|
 
-The server to client messages and their format is as below
+The *Client*, *Login* and *Register* are the only three commands which work while not logged in.
+
+The server to client messages and their format is as below.
+The list does not include error messages, you're free to poke around and figure out the error messages on your own or look at the code.
 
 |Messages from server|Description|
 |--------------------|-----------|
-|Name? **text**      |Server prompts the client for its name in this way. **text** is info such as length of name, characters accepted, or if previously provided name was already taken|
+|Welcome! |Just a welcome message when connected to server|
+|Login or Register |Login with username/password or login as guest or register after this message|
 |Game Start **no** **size** **player_white** **player_black** **your color**|Notifies client that a game has started. The game no. being **no**, players' names being **white_player**, **black_player** and **your_color** being your color which could be either "white" or "black"|
 |Game#**no** P **Sq** C\|W|The 'Place' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|The 'Move' move played by the other player in game number **no**. The format is same as the command from client to server|
+|Game#**no** Time **whitetime** **blacktime** |Update the clock with the time specified for white and black players|
 |Game#**no** over **result**|Game number **no** is over. **result** is one of *R-0*, *0-R*, *F-0*, *0-F*, *1/2-1/2*|
-|Game#**no** Abandoned|Game number *no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
-|Seek new **no** **name** **boardsize**|There is a new seek with seek no. **no** posted by **name** with board size **boardsize**|
-|Seek remove **no** **name** **boardsize**|Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
-|Message **text** |A generic message from server. Might be used to indicate announcements like name accepted/server going down, etc|
+|Game#**no** Abandoned|Game number **no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
+|Seek new **no** **name** **boardsize** **time** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player|
+|Seek remove **no** **name** **boardsize** **time** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
+|Observe Game#**no** **player_white** vs **player_black**, **no**x**no**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing this game|
+|Shout \<**player**\> **text** |Chat message from *player*|
+|Message **text** |A message from server. Might be used to indicate announcements like name accepted/server going down, etc|
+|Error **text** |An error message|
 |Online **no** |**no** players are connected to server|
 |NOK |Indicates the command client send is invalid or unrecognized|
-|OK  |Indicates previous command is ok. Clients can ignore this. I might remove this message altogether in future as it serves no real purpose|
-
-More commands or messages might be added for any upcoming features such as spectating games, chatting with opponents, etc
+|OK  |Indicates previous command is ok. Clients can ignore this. *I might remove this message altogether in future as it serves no real purpose*|
 
 ##Info for Client developers
-Stand alone clients can connect directly to playtak.com at port 10000.
+Stand alone clients can connect directly to playtak.com at port 10000 (but this communication will not be encrypted)
 <br>
-Web clients wanting to use websockets can connect to playtak.com at port 80.
-<br>
-https://github.com/kanaka/websockify is running on port 80 and it forwards websocket traffic to port 10000. HTTP traffic is served with default webclient.
+The defalut Web client runs on playtak.com port 80/443.
 <br>
 **telnet to playtak.com on port 10000 to test the commands.**
 
 Typical communication is like below
 * Connect to server. Server gives welcome message
-* Server asks for name
-* Client replies with name
-* Server accepts name or asks for another name if existing one is invalid or already taken
+* Server sends "Login or Register"
+* Client replies with login information or registers (If Client registers, password is sent to the mail and it can login with the password)
+* Server accepts name or asks for another name if the one provided is invalid or already taken
 * Client asks for list of seeks
 * Server responds with "Seek new" messages for all the seeks
 * Client posts seek or accepts existing seek
