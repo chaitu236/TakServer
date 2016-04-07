@@ -7,7 +7,7 @@ Server to handle online TAK games
 The input/output of server is all text.
 
 The client to server commands and their format is as below
-(format of all squares is [Capital letter][digit]. e.g., A2, B5, C4, row numbers start from 1)
+(format of all squares is [Capital letter][digit]. e.g., A2, B5, C4, (row numbers start from 1)
 
 **Since the server and client are still in beta, the API is bound to change to support more features (though I would try to keep the changes to a minimum)**
 
@@ -51,7 +51,7 @@ The list does not include error messages, you're free to poke around and figure 
 |Game#**no** Abandoned|Game number **no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
 |Seek new **no** **name** **boardsize** **time** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player|
 |Seek remove **no** **name** **boardsize** **time** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
-|Observe Game#**no** **player_white** vs **player_black**, **no**x**no**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing this game|
+|Observe Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing the game number **no** of board size **size** with original time setting of **origin_time** seconds where **moves** half-moves are played and it is **player_name**'s turn to move|
 |Shout \<**player**\> **text** |Chat message from *player*|
 |Message **text** |A message from server. Might be used to indicate announcements like name accepted/server going down, etc|
 |Error **text** |An error message|
