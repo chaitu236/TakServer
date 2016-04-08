@@ -38,7 +38,7 @@ public class Seek {
         no = ++seekNo;
         time = t;
         
-        if (b < 4 || b > 8)
+        if (b < 3 || b > 8)
             b = DEFAULT_SIZE;
         boardSize = b;
     }

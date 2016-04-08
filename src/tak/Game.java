@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +109,7 @@ public class Game {
     }
     Square[][] board;
 
-    static int DEFAULT_SIZE = 4;
+    static int DEFAULT_SIZE = 5;
 
     static int gameNo = 0;
     
@@ -129,7 +128,7 @@ public class Game {
         
         time = System.currentTimeMillis();
 
-        if (b < 4 || b > 8) {
+        if (b < 3 || b > 8) {
             b = DEFAULT_SIZE;
         }
 
@@ -137,6 +136,7 @@ public class Game {
         int capstonesCount=0;
         int tilesCount=0;
         switch(b) {
+            case 3: capstonesCount = 0; tilesCount = 10; break;
             case 4: capstonesCount = 0; tilesCount = 15; break;
             case 5: capstonesCount = 1; tilesCount = 21; break;
             case 6: capstonesCount = 1; tilesCount = 30; break;
