@@ -45,6 +45,7 @@ The list does not include error messages, you're free to poke around and figure 
 |Login or Register |Login with username/password or login as guest or register after this message|
 |Welcome **name**! |A welcome message indicating that you've logged in as **name**|
 |GameList Add Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move |Notifies client that a game has started (which the client can observe if it wants)|
+|GameList Remove Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move |Notifies client that the game has ended|
 |Game Start **no** **size** **player_white** **player_black** **your color** |Notifies client to start a game. The game no. being **no**, players' names being **white_player**, **black_player** and **your_color** being your color which could be either "white" or "black"|
 |Game#**no** P **Sq** C\|W|The 'Place' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|The 'Move' move played by the other player in game number **no**. The format is same as the command from client to server|
