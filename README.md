@@ -1,6 +1,6 @@
 # TakServer
 
-*Last updated on 04/06/2016*
+*Last updated on 04/08/2016*
 
 Server to handle online TAK games
 
@@ -17,9 +17,9 @@ The client to server commands and their format is as below
 |Register **username email** |Register with the given username and email|
 |Login **username password** |Login with the username and password|
 |Login Guest |Login as a guest|
-|Seek **no** **time** |Seeks a game of board size *no* with time per player *time* specified in seconds|
-|Accept **no**|Accepts the game with the game number **no**|
-|Game#**no** P **Sq** C\|W|Sends a 'Place' move to the specified game no. The optional suffix 'C' or 'W' denote if it is a capstone or a wall (standing stone)|
+|Seek **no** **time** |Seeks a game of board size **no** with time per player **time** specified in seconds|
+|Accept **no** |Accepts the seek with the number **no**|
+|Game#**no** P **Sq** C\|W |Sends a 'Place' move to the specified game no. The optional suffix 'C' or 'W' denote if it is a capstone or a wall (standing stone)|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|Sends a 'Move' move to the specified game no. **Sq1** is beginning square, **Sq2** is ending square, **no1**, **no2**, **no3**.. are the no. of pieces dropped in the in-between squares (including the last square)|
 |Game#**no** OfferDraw |Offers the opponent draw or accepts the opponent's draw offer|
 |Game#**no** RemoveDraw |Removes your draw offer|
@@ -43,7 +43,9 @@ The list does not include error messages, you're free to poke around and figure 
 |--------------------|-----------|
 |Welcome! |Just a welcome message when connected to server|
 |Login or Register |Login with username/password or login as guest or register after this message|
-|Game Start **no** **size** **player_white** **player_black** **your color**|Notifies client that a game has started. The game no. being **no**, players' names being **white_player**, **black_player** and **your_color** being your color which could be either "white" or "black"|
+|Welcome **name**! |A welcome message indicating that you've logged in as **name**|
+|GameList Add Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move |Notifies client that a game has started (which the client can observe if it wants)|
+|Game Start **no** **size** **player_white** **player_black** **your color** |Notifies client to start a game. The game no. being **no**, players' names being **white_player**, **black_player** and **your_color** being your color which could be either "white" or "black"|
 |Game#**no** P **Sq** C\|W|The 'Place' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|The 'Move' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** Time **whitetime** **blacktime** |Update the clock with the time specified for white and black players|
@@ -52,7 +54,7 @@ The list does not include error messages, you're free to poke around and figure 
 |Seek new **no** **name** **boardsize** **time** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player|
 |Seek remove **no** **name** **boardsize** **time** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
 |Observe Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing the game number **no** of board size **size** with original time setting of **origin_time** seconds where **moves** half-moves are played and it is **player_name**'s turn to move|
-|Shout \<**player**\> **text** |Chat message from *player*|
+|Shout \<**player**\> **text** |Chat message from **player**|
 |Message **text** |A message from server. Might be used to indicate announcements like name accepted/server going down, etc|
 |Error **text** |An error message|
 |Online **no** |**no** players are connected to server|
@@ -71,8 +73,7 @@ Typical communication is like below
 * Server sends "Login or Register"
 * Client replies with login information or registers (If Client registers, password is sent to the mail and it can login with the password)
 * Server accepts name or asks for another name if the one provided is invalid or already taken
-* Client asks for list of seeks
-* Server responds with "Seek new" messages for all the seeks
+* Server sends list of seeks with "Seek new" messages and games in progress with "GameList Add" messages
 * Client posts seek or accepts existing seek
 * If seek is accepted, server removes existing seeks for both the players (sends "Seek remove" for all) and starts game
 * Client sends moves, server validates moves and sends the move to other client. If invalid, server sends a "NOK" message.

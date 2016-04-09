@@ -59,8 +59,10 @@ public class Seek {
             c.send("Seek new "+Seek.seeks.get(no));
         }
     }
+    
     static void registerListener(Client c) {
         seekListeners.add(c);
+        sendListTo(c);
     }
     
     static void updateListeners(final String st) {

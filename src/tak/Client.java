@@ -139,8 +139,6 @@ public class Client extends Thread {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
         clientConnections.add(this);
-        Seek.registerListener(this);
-        Game.registerGameListListener(this);
         spectating = new ArrayList<>();
         Log("Connected "+socket.getInetAddress());
     }
@@ -257,8 +255,10 @@ public class Client extends Thread {
 
                         send("Welcome "+player.getName()+"!");
                         Log("Player logged in");
-                        Seek.sendListTo(this);
-                        Game.sendGameListTo(this);
+                        
+                        Seek.registerListener(this);
+                        Game.registerGameListListener(this);
+                        
                         sendAllOnline("Online "+(++onlineClients));
                     }
                     //Login
@@ -279,8 +279,10 @@ public class Client extends Thread {
 
                                     send("Welcome "+player.getName()+"!");
                                     Log("Player logged in");
-                                    Seek.sendListTo(this);
-                                    Game.sendGameListTo(this);
+                                    
+                                    Seek.registerListener(this);
+                                    Game.registerGameListListener(this);
+                                    
                                     sendAllOnline("Online "+(++onlineClients));
                                 }
                             } else

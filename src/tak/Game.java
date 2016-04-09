@@ -232,6 +232,7 @@ public class Game {
     
     static void registerGameListListener(Client c) {
         gameListeners.add(c);
+        sendGameListTo(c);
     }
     
     static void unregisterGameListListener(Client c) {
