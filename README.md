@@ -50,7 +50,7 @@ The list does not include error messages, you're free to poke around and figure 
 |Game#**no** P **Sq** C\|W|The 'Place' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|The 'Move' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** Time **whitetime** **blacktime** |Update the clock with the time specified for white and black players|
-|Game#**no** over **result**|Game number **no** is over. **result** is one of *R-0*, *0-R*, *F-0*, *0-F*, *1/2-1/2*|
+|Game#**no** Over **result**|Game number **no** is over. **result** is one of *R-0*, *0-R*, *F-0*, *0-F*, *1/2-1/2*|
 |Game#**no** OfferDraw |Indicates the opponent has offered a draw|
 |Game#**no** RemoveDraw |Indicates your opponent has taken back his offer to draw|
 |Game#**no** Abandoned|Game number **no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
