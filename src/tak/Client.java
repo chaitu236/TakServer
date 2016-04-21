@@ -105,7 +105,8 @@ public class Client extends Thread {
     Client(Socket socket) {
         this.socket = socket;
         try {
-            socket.setTcpNoDelay(true);
+            this.socket.setSoTimeout(90*1000);
+            this.socket.setTcpNoDelay(true);
         } catch (SocketException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
