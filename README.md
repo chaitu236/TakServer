@@ -31,7 +31,7 @@ The client to server commands and their format is as below
 |Unobserve **no** |Unobserve the specified game|
 |Game#**no** Show **Sq** |Prints the position in the specified square (this is used mainly to convert server notation to PTN notation)|
 |Shout **text** |Send text to all logged in players|
-|Ping |Pings to inform server that the client is alive. Recommended ping spacing is 30 seconds. Server may disconnect clients if pings are not received|
+|PING |Pings to inform server that the client is alive. Recommended ping spacing is 30 seconds. Server may disconnect clients if pings are not received|
 |quit |Sent by client to indicate it is going to quit. Server removes all seeks, abandons (which loses) game if any|
 
 The *Client*, *Login* and *Register* are the only three commands which work while not logged in.
