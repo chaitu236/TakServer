@@ -102,6 +102,35 @@ public class Client extends Thread {
     String pingString = "^PING$";
     Pattern pingPattern;
     
+    String sudoString = "sudo ([^\n\r]{1,256})";
+    Pattern sudoPattern;
+    
+    /* Mod commands start with sudoString */
+    String gagString = "sudo gag ([a-zA-Z][a-zA-Z0-9_]{3,15})";
+    Pattern gagPattern;
+    
+    String unGagString = "sudo ungag ([a-zA-Z][a-zA-Z0-9_]{3,15})";
+    Pattern unGagPattern;
+    
+    String kickString = "sudo kick ([a-zA-Z][a-zA-Z0-9_]{3,15})";
+    Pattern kickPattern;
+    
+    String listCmdString = "sudo list ([a-zA-Z]{3,15})";
+    Pattern listCmdPattern;
+        
+    //set param user value
+    String setString = "sudo set ([a-zA-Z]{3,15}) ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([a-zA-Z0-9]{1,15})";
+    Pattern setPattern;
+    
+    String modString = "sudo mod ([a-zA-Z][a-zA-Z0-9_]{3,15})";
+    Pattern modPattern;
+    
+    String unModString = "sudo unmod ([a-zA-Z][a-zA-Z0-9_]{3,15})";
+    Pattern unModPattern;
+    
+    String broadcastString = "sudo broadcast ([^\n\r]{1,256})";
+    Pattern broadcastPattern;
+
     Client(Socket socket) {
         this.socket = socket;
         try {
@@ -132,6 +161,16 @@ public class Client extends Thread {
         shoutPattern = Pattern.compile(shoutString);
         pingPattern = Pattern.compile(pingString);
         loginGuestPattern = Pattern.compile(loginGuestString);
+        
+        sudoPattern = Pattern.compile(sudoString);
+        gagPattern = Pattern.compile(gagString);
+        unGagPattern = Pattern.compile(unGagString);
+        kickPattern = Pattern.compile(kickString);
+        listCmdPattern = Pattern.compile(listCmdString);
+        setPattern = Pattern.compile(setString);
+        modPattern = Pattern.compile(modString);
+        unModPattern = Pattern.compile(unModString);
+        broadcastPattern = Pattern.compile(broadcastString);
 
         try {
             clientReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -145,7 +184,7 @@ public class Client extends Thread {
     }
 
     void sendOK() {
-        send("OK");
+        sendWithoutLogging("OK");
     }
 
     void sendNOK() {
@@ -156,6 +195,10 @@ public class Client extends Thread {
         Log("Send:"+st);
         clientWriter.println(st);
         clientWriter.flush();
+    }
+    
+    void sendCmdReply(String st) {
+        sendWithoutLogging("CmdReply "+st);
     }
     
     void sendWithoutLogging(String st) {
@@ -181,7 +224,7 @@ public class Client extends Thread {
             @Override
             public void run() {
                 for(Client c: clientConnections)
-                    c.send(msg);
+                    c.sendWithoutLogging(msg);
             }
         }.start();
     }
@@ -192,7 +235,7 @@ public class Client extends Thread {
             public void run() {
                 for(Client c: clientConnections)
                     if(c.player!=null)
-                        c.send(msg);
+                        c.sendWithoutLogging(msg);
             }
         }.start();
     }
@@ -225,6 +268,14 @@ public class Client extends Thread {
     
     void removeGame(Game g) {
         game = null;
+    }
+    
+    void kick() {
+        try {
+            clientReader.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
@@ -458,9 +509,15 @@ public class Client extends Thread {
                     }
                     //Shout
                     else if ((m=shoutPattern.matcher(temp)).find()){
-                        String msg = "<"+player.getName()+"> "+m.group(1);
-                        sendAllOnline("Shout "+msg);
-                        IRCBridge.send(msg);
+                        if(!player.isGagged()) {
+                            String msg = "<"+player.getName()+"> "+m.group(1);
+                            sendAllOnline("Shout "+msg);
+                            IRCBridge.send(msg);
+                        }
+                    }
+                    //sudo
+                    else if ((m=sudoPattern.matcher(temp)).find()){
+                        sudoHandler(temp);
                     }
                     //Undefined
                     else {
@@ -478,6 +535,171 @@ public class Client extends Thread {
             }
         }
     }
+    
+    //this has more rights than p
+    boolean moreRights(Player p) {
+        //no one has rights over me, not even me
+        if(p.getName().equals("kakaburra"))
+            return false;
+        
+        //i have all the rights
+        if(player.getName().equals("kakaburra"))
+            return true;
+        
+        //if i am mod and other is not mod
+        if(player.isMod() && !p.isMod())
+            return true;
+        
+        return false;
+    }
+    
+    void sudoHandler(String msg) {
+        if(!player.isMod() && !player.getName().equals("kakaburra")) {
+            sendNOK();
+            return;
+        }
+        
+        sendCmdReply("> "+msg);
+        
+        Matcher m;
+        
+        if((m=unGagPattern.matcher(msg)).find()) {
+            String name = m.group(1);
+            Player p = Player.players.get(name);
+            if(p == null) {
+                sendCmdReply("No such player");
+                return;
+            }
+            
+            if(!moreRights(p)) {
+                sendCmdReply("You dont have rights");
+                return;
+            }
+            
+            p.unGag();
+            sendCmdReply(p.getName()+" ungagged");
+        }
+        else if((m=gagPattern.matcher(msg)).find()) {
+            String name = m.group(1);
+            Player p = Player.players.get(name);
+            if(p == null) {
+                sendCmdReply("No such player");
+                return;
+            }
+            
+            if(!moreRights(p)) {
+                sendCmdReply("You dont have rights");
+                return;
+            }
+            
+            p.gag();
+            sendCmdReply(p.getName()+" gagged");
+        }
+        else if((m=kickPattern.matcher(msg)).find()) {
+            String name = m.group(1);
+            Player p = Player.players.get(name);
+            if(p == null) {
+                sendCmdReply("No such player");
+                return;
+            }
+            
+            if(!moreRights(p)) {
+                sendCmdReply("You dont have rights");
+                return;
+            }
+            
+            Client c = p.getClient();
+            if(c == null) {
+                sendCmdReply("Player not logged in");
+                return;
+            }
+            
+            c.kick();
+            sendCmdReply(p.getName()+" kicked");
+            
+        }
+        else if((m=listCmdPattern.matcher(msg)).find()) {
+            String var = m.group(1);
+            if("gag".equals(var)) {
+                String res="[";
+                for(Player p: Player.gagList)
+                    res += p.getName()+", ";
+                
+                sendCmdReply(res+"]");
+            }
+            else if ("mod".equals(var)) {
+                String res = "[";
+                for(Player p: Player.modList)
+                    res += p.getName()+", ";
+                
+                sendCmdReply(res+"]");
+            }
+            else {
+                //previliged commands - only for me
+                if(!player.getName().equals("kakaburra")) {
+                    sendCmdReply("command not found");
+                    return;
+                }
+                
+                if("online".equals(var)) {
+                    String res = "[";
+                    for(Client c: clientConnections) {
+                        if(c.player != null)
+                            res += c.player.getName()+", ";
+                    }
+                    sendCmdReply(res+"]");
+                }
+            }
+        }
+        else {
+            //previliged commands - only for me
+            if(!player.getName().equals("kakaburra")) {
+                sendCmdReply("command not found");
+                return;
+            }
+
+            if((m=modPattern.matcher(msg)).find()) {
+                String name = m.group(1);
+                System.out.println("here "+name+" "+msg);
+                Player p = Player.players.get(name);
+                if(p == null) {
+                    sendCmdReply("No such player");
+                    return;
+                }
+                p.setMod();
+                sendCmdReply("Added "+p.getName()+" as moderator");
+            }
+            else if((m=unModPattern.matcher(msg)).find()) {
+                String name = m.group(1);
+                Player p = Player.players.get(name);
+                if(p == null) {
+                    sendCmdReply("No such player");
+                    return;
+                }
+                p.unMod();
+                sendCmdReply("Removed "+p.getName()+" as moderator");
+            }
+            else if((m=setPattern.matcher(msg)).find()) {
+                String param = m.group(1);
+                String name = m.group(2);
+                String value = m.group(3);
+                
+                Player p = Player.players.get(name);
+                if(p == null) {
+                    sendCmdReply("No such player");
+                    return;
+                }
+                if(param.equals("password")) {
+                    p.setPassword(value);
+                }
+            }
+            else if((m=broadcastPattern.matcher(msg)).find()) {
+                String bmsg = m.group(1);
+                Client.sendAllOnline(bmsg);
+            }
+        }
+    }
+    
     static void sigterm() {
         TakServer.Log("Sigterm!");
         try {

@@ -192,7 +192,7 @@ public class Game {
         if(drawOfferedBy == null) {
             drawOfferedBy = p;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().send("Game#"+no+" OfferDraw");
+            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" OfferDraw");
         } else if(drawOfferedBy!=p) {
             gameState = gameS.DRAW;
             whenGameEnd();
@@ -203,7 +203,7 @@ public class Game {
         if(drawOfferedBy == p) {
             drawOfferedBy = null;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().send("Game#"+no+" RemoveDraw");
+            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RemoveDraw");
         }
     }
     
@@ -212,13 +212,13 @@ public class Game {
     }
     static void sendGameListTo(Client c) {
         for (Integer no : Game.games.keySet()) {
-            c.send("GameList Add "+Game.games.get(no).shortDesc());
+            c.sendWithoutLogging("GameList Add "+Game.games.get(no).shortDesc());
         }
     }
     
     void sendMoveListTo(Client c) {
         for(String move:moveList)
-            c.send("Game#"+no+" "+move);
+            c.sendWithoutLogging("Game#"+no+" "+move);
     }
     
     String shortDesc(){
@@ -244,7 +244,7 @@ public class Game {
             @Override
             public void run() {
                 for (Client cc : gameListeners) {
-                    cc.send("GameList " + st);
+                    cc.sendWithoutLogging("GameList " + st);
                 }
             }
         }.start();
@@ -327,7 +327,7 @@ public class Game {
         lastUpdateTime = curTime;
 
         String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
-        c.send(msg);
+        c.sendWithoutLogging(msg);
     }
     
     void updateTimeTurnChange() {
@@ -369,8 +369,8 @@ public class Game {
             }
         }, timeToCount);
         String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
-        white.getClient().send(msg);
-        black.getClient().send(msg);
+        white.getClient().sendWithoutLogging(msg);
+        black.getClient().sendWithoutLogging(msg);
         sendToSpectators(msg);
     }
     
@@ -688,9 +688,9 @@ public class Game {
     
     void sendToOtherPlayer(Player p, String move) {
         if(white==p)
-            black.getClient().send(move);
+            black.getClient().sendWithoutLogging(move);
         else
-            white.getClient().send(move);
+            white.getClient().sendWithoutLogging(move);
     }
     
     void sendToSpectators(final String msg) {
@@ -698,7 +698,7 @@ public class Game {
             @Override
             public void run() {
                 for(Client c:spectators)
-                    c.send(msg);
+                    c.sendWithoutLogging(msg);
             }
         }.start();
     }

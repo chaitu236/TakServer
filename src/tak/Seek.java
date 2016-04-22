@@ -70,7 +70,7 @@ public class Seek {
             @Override
             public void run() {
                 for (Client cc : seekListeners) {
-                    cc.send("Seek " + st);
+                    cc.sendWithoutLogging("Seek " + st);
                 }
             }
         }.start();

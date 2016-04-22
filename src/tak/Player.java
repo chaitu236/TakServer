@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,6 +21,9 @@ import java.util.logging.Logger;
  */
 public class Player {
     public static HashMap<String, Player> players = new HashMap<>();
+    public static HashSet<Player> modList = new HashSet<>();
+    public static HashSet<Player> gagList = new HashSet<>();
+    
     static int idCount=0;
     static int guestCount=0;
     
@@ -36,6 +40,8 @@ public class Player {
     private int r8;
     
     private boolean guest;
+    private boolean mod = false;
+    private boolean gag = false;//don't broadcast his shouts
     //variables not in database
     private Client client;
     
@@ -63,8 +69,40 @@ public class Player {
         this.client = client;
     }
     
+    public boolean isMod() {
+        return mod;
+    }
+    
+    public void setMod() {
+        mod = true;
+        modList.add(this);
+    }
+    
+    public void unMod() {
+        mod = false;
+        modList.remove(this);
+    }
+    
+    public void gag() {
+        gag = true;
+        Player.gagList.add(this);
+    }
+    
+    public void unGag() {
+        gag = false;
+        Player.gagList.remove(this);
+    }
+    
+    public boolean isGagged() {
+        return gag;
+    }
+    
     public void logout() {
         this.client = null;
+        if(guest) {
+            Player.modList.remove(this);
+            Player.gagList.remove(this);
+        }
     }
     
     Player(String name, String email, String password, boolean guest) {
@@ -73,6 +111,7 @@ public class Player {
     
     Player() {
         this("Guest"+(++guestCount), "", "", true);
+        Player.players.put(this.name, this);
     }
     
     Client getClient() {
@@ -158,6 +197,19 @@ public class Player {
         try {
             stmt = Database.connection.createStatement();
             String sql = "UPDATE players set r8 = "+r8+" where id="+id+";";
+            stmt.executeUpdate(sql);
+        } catch (SQLException ex) {
+            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void setPassword(String pass) {
+        this.password = pass;
+        
+        Statement stmt;
+        try {
+            stmt = Database.connection.createStatement();
+            String sql = "UPDATE players set password = \""+this.password+"\" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
