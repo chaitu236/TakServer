@@ -7,10 +7,13 @@ package tak;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Adapted from http://archive.oreilly.com/pub/h/1966
@@ -22,15 +25,18 @@ public class IRCBridge {
     public static BufferedReader reader = null;
     public static PrintWriter writer = null;
 
-    public static final String server = "irc.freenode.net";
-    public static final String nick = "playtak";
-    public static final String login = "playtak.com";
-    public static final String channel = "#tak";
+    public static String server;
+    public static String nick;
+    public static String login;
+    public static String channel;
+    public static String password;
+    
+    public static Thread thread;
 
     private static boolean connected = false;
 
     public static void init() {
-        new Thread() {
+        thread = new Thread() {
             @Override
             public void run() {
                 try {
@@ -80,9 +86,19 @@ public class IRCBridge {
                     }
                 } catch (Exception e) {
                     System.err.println(e);
+                } finally {
+                    writer.close();
+                    try {
+                        reader.close();
+                    } catch (IOException ex) {
+                        Logger.getLogger(IRCBridge.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    connected = false;
+                    writer = null;
                 }
             }
-        }.start();
+        };
+        thread.start();
     }
 
     public static void send(String msg) {

@@ -37,6 +37,7 @@ public class Settings {
         }
         
         parseEmail();
+        parseIRC();
     }
     
     private static void parseEmail() {
@@ -48,5 +49,17 @@ public class Settings {
         EMail.password = element.getElementsByTagName("password").item(0).getTextContent();
         
         System.out.println("user "+EMail.user+" host "+EMail.host);
+    }
+    
+    private static void parseIRC() {
+        NodeList nList = doc.getElementsByTagName("irc");
+        Node node = nList.item(0);
+        Element element = (Element)node;
+        
+        IRCBridge.server = element.getElementsByTagName("server").item(0).getTextContent();
+        IRCBridge.nick = element.getElementsByTagName("nick").item(0).getTextContent();
+        IRCBridge.login = element.getElementsByTagName("login").item(0).getTextContent();
+        IRCBridge.channel = element.getElementsByTagName("channel").item(0).getTextContent();
+        IRCBridge.password = element.getElementsByTagName("password").item(0).getTextContent();
     }
 }
