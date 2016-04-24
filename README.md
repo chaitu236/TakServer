@@ -25,6 +25,8 @@ The client to server commands and their format is as below
 |Game#**no** RemoveDraw |Removes your draw offer|
 |Game#**no** Resign |Resign the game|
 |Game#**no** Show |Prints a somewhat human readable game position of the game number **no**|
+|Game#**no** RequestUndo |Requests the other player to undo the last move|
+|Game#**no** RemoveUndo |Removes your undo request|
 |List |Send list of seeks|
 |GameList |Send list of games in progress|
 |Observe **no** |Observe the specified game. Server sends the game moves and clock info|
@@ -53,6 +55,9 @@ The list does not include error messages, you're free to poke around and figure 
 |Game#**no** Over **result**|Game number **no** is over. **result** is one of *R-0*, *0-R*, *F-0*, *0-F*, *1/2-1/2*|
 |Game#**no** OfferDraw |Indicates the opponent has offered a draw|
 |Game#**no** RemoveDraw |Indicates your opponent has taken back his offer to draw|
+|Game#**no** RequestUndo |Request from opponent to undo the last move|
+|Game#**no** RemoveUndo |Opponent removes his undo request|
+|Game#**no** Undo |Undo the last move. Client is supposed to keep track of previous board states and undo to the last state.|
 |Game#**no** Abandoned|Game number **no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
 |Seek new **no** **name** **boardsize** **time** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player|
 |Seek remove **no** **name** **boardsize** **time** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|

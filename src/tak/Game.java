@@ -515,6 +515,7 @@ public class Game {
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
             moveList.add(move.trim());
             saveBoardPosition();
+            undoRequestedBy = null;//remove any requests on move
             sendMove(p, move.trim());
             
             checkRoadWin();
@@ -695,6 +696,7 @@ public class Game {
             move+=val+" ";
         moveList.add(move.trim());
         saveBoardPosition();
+        undoRequestedBy = null;//remove any requests on move
         sendMove(p, move.trim());
         
         checkRoadWin();

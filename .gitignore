@@ -3,3 +3,4 @@
 /build/
 properties.xml
 *.DS_Store
+/store/
