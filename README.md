@@ -25,7 +25,7 @@ The client to server commands and their format is as below
 |Game#**no** RemoveDraw |Removes your draw offer|
 |Game#**no** Resign |Resign the game|
 |Game#**no** Show |Prints a somewhat human readable game position of the game number **no**|
-|Game#**no** RequestUndo |Requests the other player to undo the last move|
+|Game#**no** RequestUndo |Requests the other player to undo the last move or accept the other player's undo request|
 |Game#**no** RemoveUndo |Removes your undo request|
 |List |Send list of seeks|
 |GameList |Send list of games in progress|
