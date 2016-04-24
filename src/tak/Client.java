@@ -77,6 +77,9 @@ public class Client extends Thread {
     
     String resignString = "^Game#(\\d+) Resign";
     Pattern resignPattern;
+    
+    String markString = "^Game#(\\d+) (Mark|Unmark) ([A-Ha-h][1-8])";
+    Pattern markPattern;
 
     String seekString = "^Seek (\\d) (\\d+)";
     Pattern seekPattern;
@@ -157,6 +160,7 @@ public class Client extends Thread {
         drawPattern = Pattern.compile(drawString);
         removeDrawPattern = Pattern.compile(removeDrawString);
         resignPattern = Pattern.compile(resignString);
+        markPattern = Pattern.compile(markString);
         wrongRegisterPattern = Pattern.compile(wrongRegisterString);
         seekPattern = Pattern.compile(seekString);
         acceptSeekPattern = Pattern.compile(acceptSeekString);
@@ -487,6 +491,15 @@ public class Client extends Thread {
                             game = null;
                             other.game = null;
                         }
+                    }
+                    //Mark/Unmark target board field.
+                    else if (game != null && (m=markPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                      String function = m.group(2);
+                      String field = m.group(3).toLowerCase();
+                      if (game.setMarked(function.equals("Mark"), field))
+                            sendOK();
+                      else
+                            sendNOK();
                     }
                     //Show game state
                     else if (game != null && (m=gamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {

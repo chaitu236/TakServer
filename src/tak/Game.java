@@ -67,6 +67,7 @@ public class Game {
         private int file, row;
         private ArrayList<Character> stack;
         int graphNo;
+        boolean marked = false;
         
         Square(int f, int r) {
             stack = new ArrayList<>();
@@ -117,6 +118,14 @@ public class Game {
         
         public String stackString() {
             return stack.toString();
+        }
+        public boolean isMarked()
+        {
+            return this.marked;
+        }
+        public void setMarked(boolean marked)
+        {
+            this.marked = marked;
         }
     }
     Square[][] board;
@@ -196,6 +205,7 @@ public class Game {
     void newSpectator(Client c) {
         c.send("Observe "+shortDesc());
         sendMoveListTo(c);
+        sendMarkedListTo(c);
         spectators.add(c);
         updateTime(c);
     }
@@ -206,6 +216,22 @@ public class Game {
         else
             gameState = gameS.WHITE;
         whenGameEnd();
+    }
+    
+    boolean setMarked(boolean marked, String field)
+    {
+        int file = field.charAt(0) - 'a';
+        int rank = field.charAt(1) - 1;
+        if (file < 0 || file >= this.boardSize
+            || rank < 0 || rank >= this.boardSize)
+            return false;
+        this.board[rank][file].setMarked(marked);
+        
+        String msg = (marked ? "Mark " : "Unmark ") + field;
+        sendToOtherPlayer(white, msg);
+        sendToOtherPlayer(black, msg);
+        sendToSpectators(msg);
+        return true;
     }
     
     Square[][] getClonedBoard(Square[][] orig) {
@@ -306,6 +332,13 @@ public class Game {
     void sendMoveListTo(Client c) {
         for(String move:moveList)
             c.sendWithoutLogging("Game#"+no+" "+move);
+    }
+    
+    void sendMarkedListTo(Client c) {
+      for(int i = 0; i < boardSize; ++i)
+        for (int j = 0; j < boardSize; ++j)
+          if (this.board[i][j].isMarked())
+            c.sendWithoutLogging("Mark " + ((char) (j + 'a')) + (i + 1));
     }
     
     String shortDesc(){
