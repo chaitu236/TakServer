@@ -105,7 +105,7 @@ public class TestGame {
             return;
         }
         
-        System.out.println(game.getBoardString());
+        System.out.println(game.board.getBoardString());
         String msg="";
         switch(game.gameState) {
             case DRAW: msg+= "1/2-1/2"; break;
