@@ -289,7 +289,6 @@ public class Game {
         board = boardHistory.peek().clone();//replace cur pos with top of stack
         
         moveList.remove(moveList.size()-1);
-        System.out.println("after undo "+board);
     }
     
     void undo(Player p) {
