@@ -63,6 +63,12 @@ public class Client extends Thread {
     String moveString = "^Game#(\\d+) M ([A-Z])(\\d) ([A-Z])(\\d)(( \\d)+)";
     Pattern movePattern;
     
+    String undoString = "^Game#(\\d+) RequestUndo";
+    Pattern undoPattern;
+    
+    String removeUndoString = "^Game#(\\d+) RemoveUndo";
+    Pattern removeUndoPattern;
+    
     String drawString = "^Game#(\\d+) OfferDraw";
     Pattern drawPattern;
     
@@ -146,6 +152,8 @@ public class Client extends Thread {
         clientPattern = Pattern.compile(clientString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
+        undoPattern = Pattern.compile(undoString);
+        removeUndoPattern = Pattern.compile(removeUndoString);
         drawPattern = Pattern.compile(drawString);
         removeDrawPattern = Pattern.compile(removeDrawString);
         resignPattern = Pattern.compile(resignString);
@@ -447,6 +455,14 @@ public class Client extends Thread {
                             sendNOK();
                             send("Error:"+st.msg());
                         }
+                    }
+                    //Handle undo offer
+                    else if (game!=null && (m = undoPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        game.undo(player);
+                    }
+                    //Handle removing undo offer
+                    else if (game!=null && (m = removeUndoPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        game.removeUndo(player);
                     }
                     //Handle draw offer
                     else if (game!=null && (m = drawPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {

@@ -45,9 +45,11 @@ public class Game {
     long whiteTime;
     long blackTime;
     long lastUpdateTime;
+    boolean timerStarted;
     Timer timer;
     
     Player drawOfferedBy;
+    Player undoRequestedBy;
     
     boolean abandoned;
     
@@ -71,6 +73,16 @@ public class Game {
             file = f;
             row = r;
             graphNo = -1;
+        }
+        
+        @Override
+        public Square clone() {
+            Square sq = new Square(file, row);
+            sq.graphNo = graphNo;
+            for(Character c: stack) {
+                sq.add(c);
+            }
+            return sq;
         }
         boolean isEmpty() {
             return stack.isEmpty();
@@ -108,6 +120,7 @@ public class Game {
         }
     }
     Square[][] board;
+    Stack<Square[][]> boardHistory;
 
     static int DEFAULT_SIZE = 5;
 
@@ -125,6 +138,7 @@ public class Game {
         originalTime = whiteTime = blackTime = t*1000;
         
         timer = new Timer();
+        timerStarted = false;
         
         time = System.currentTimeMillis();
 
@@ -148,18 +162,24 @@ public class Game {
         
         moveCount = 0;
         abandoned = false;
+        
         board = new Square[boardSize][boardSize];
+        boardHistory = new Stack<>();
+        
         no = ++gameNo;
         gameState = gameS.NONE;
         drawOfferedBy = null;
+        undoRequestedBy = null;
         
         moveList = Collections.synchronizedList(new ArrayList<String>());
 
         for (int i = 0; i < b; i++) {
             for (int j = 0; j < b; j++) {
-                Square sq = board[i][j] = new Square(j, i+1);
+                board[i][j] = new Square(j, i+1);
             }
         }
+        
+        boardHistory.push(getClonedBoard(board));//store empty position
         spectators = Collections.synchronizedSet(new HashSet<Client>());
     }
     
@@ -186,6 +206,73 @@ public class Game {
         else
             gameState = gameS.WHITE;
         whenGameEnd();
+    }
+    
+    Square[][] getClonedBoard(Square[][] orig) {
+        Square[][] clone = new Square[boardSize][boardSize];
+        
+        for(int i=0;i<boardSize;i++){
+            for(int j=0;j<boardSize;j++) {
+                clone[i][j] = board[i][j].clone();
+            }
+        }
+        return clone;
+    }
+    
+    void saveBoardPosition() {
+        Square[][] clone = getClonedBoard(board);
+        
+        boardHistory.push(clone);
+//        for(Square[][] sq: boardHistory) {
+//            for(int i=0;i<boardSize;i++) {
+//                for(int j=0;j<boardSize;j++) {
+//                    System.out.print(sq[i][j].stackString()+" ");
+//                }
+//                System.out.println("");
+//            }
+//            System.out.println("---");
+//        }
+    }
+    
+    void undoPosition() {
+        boardHistory.pop();//discard cur pos
+        Square[][] hist = boardHistory.peek();//replace cur pos with top of stack
+        
+        for(int i=0;i<boardSize;i++){
+            for(int j=0;j<boardSize;j++) {
+                board[i][j] = hist[i][j].clone();
+            }
+        }
+        moveList.remove(moveList.size()-1);
+        moveCount--;
+    }
+    
+    void undo(Player p) {
+        if(moveCount <= 0) {
+            p.getClient().sendNOK();
+            return;
+        }
+        
+        if(undoRequestedBy == null) {
+            undoRequestedBy = p;
+            Player otherPlayer = (p==white)?black:white;
+            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RequestUndo");
+        } else if(undoRequestedBy != p) {
+            undoRequestedBy = null;
+            undoPosition();
+            white.getClient().send("Game#"+no+" Undo");
+            black.getClient().send("Game#"+no+" Undo");
+            sendToSpectators("Game#"+no+" Undo");
+            updateTimeTurnChange();
+        }
+    }
+    
+    void removeUndo(Player p) {
+        if(undoRequestedBy == p) {
+            undoRequestedBy = null;
+            Player otherPlayer = (p==white)?black:white;
+            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RemoveUndo");
+        }
     }
     
     void draw(Player p) {
@@ -249,10 +336,11 @@ public class Game {
             }
         }.start();
     }
+    
     @Override
     public String toString() {
         StringBuilder sb=new StringBuilder(shortDesc());
-        sb.append(getBoardString());
+        sb.append("\n").append(getBoardString());
         return sb.toString();
     }
     
@@ -266,6 +354,7 @@ public class Game {
         }
         return sb.toString();
     }
+    
     private boolean boundsCheck(char file, int rank) {
         int fl = file - 'A';
         int rk = rank - 1;
@@ -316,7 +405,7 @@ public class Game {
         
         long curTime = System.nanoTime();
         long elapsedMS = (curTime - lastUpdateTime)/1000000;
-        long timeToCount=0;
+        long timeToCount = 0;
         
         if(!isWhitesTurn()) {
             blackTime -= elapsedMS;
@@ -334,7 +423,8 @@ public class Game {
         if(whiteTime == -1 || gameState!=gameS.NONE)
             return;
         //start time after 1st move is played
-        if(moveCount == 1) {
+        if(!timerStarted) {
+            timerStarted = true;
             this.lastUpdateTime = System.nanoTime();
         }
         
@@ -424,6 +514,7 @@ public class Game {
             moveCount++;
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
             moveList.add(move.trim());
+            saveBoardPosition();
             sendMove(p, move.trim());
             
             checkRoadWin();
@@ -603,6 +694,7 @@ public class Game {
         for(int val: vals)
             move+=val+" ";
         moveList.add(move.trim());
+        saveBoardPosition();
         sendMove(p, move.trim());
         
         checkRoadWin();
