@@ -32,13 +32,6 @@ public class Game {
     long time;
 
     int no;
-    int boardSize;
-    int moveCount;
-    int whiteCapstones;
-    int blackCapstones;
-    
-    int whiteTilesCount;
-    int blackTilesCount;
     
     //time in milli seconds
     long originalTime;
@@ -63,64 +56,168 @@ public class Game {
     static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
     static Set<Client> gameListeners = Collections.synchronizedSet(new HashSet<Client>());
     
-    class Square {
-        private int file, row;
-        private ArrayList<Character> stack;
-        int graphNo;
+    class Board {
+        int boardSize;
+        int moveCount;
+        int whiteCapstones;
+        int blackCapstones;
+
+        int whiteTilesCount;
+        int blackTilesCount;
         
-        Square(int f, int r) {
-            stack = new ArrayList<>();
-            file = f;
-            row = r;
-            graphNo = -1;
+        class Square {
+            private int file, row;
+            private ArrayList<Character> stack;
+            int graphNo;
+
+            Square(int f, int r) {
+                stack = new ArrayList<>();
+                file = f;
+                row = r;
+                graphNo = -1;
+            }
+
+            @Override
+            public Square clone() {
+                Square sq = new Square(file, row);
+                sq.graphNo = graphNo;
+                for(Character c: stack) {
+                    sq.add(c);
+                }
+                return sq;
+            }
+            boolean isEmpty() {
+                return stack.isEmpty();
+            }
+            void add(char c) {
+                stack.add(c);
+            }
+            int size() {
+                return stack.size();
+            }
+            char get(int i) {
+                return stack.get(i);
+            }
+            char pop() {
+                if(stack.size() > 0) {
+                    char ret = topOfStack();
+                    stack.remove(stack.size()-1);
+                    return ret;
+                }
+                return 0;
+            }
+            char topOfStack() {
+                if(stack.isEmpty())
+                    return 0;
+
+                return stack.get(stack.size()-1);
+            }
+            @Override
+            public String toString() {
+                return ((char)(file+'A'))+""+row+" "+graphNo;
+            }
+
+            public String stackString() {
+                return stack.toString();
+            }
+        }
+        Square[][] squares;
+        
+        Board(int b) {
+            if (b < 3 || b > 8) {
+                b = DEFAULT_SIZE;
+            }
+            
+            boardSize = b;
+            int capstonesCount=0;
+            int tilesCount=0;
+            switch(b) {
+                case 3: capstonesCount = 0; tilesCount = 10; break;
+                case 4: capstonesCount = 0; tilesCount = 15; break;
+                case 5: capstonesCount = 1; tilesCount = 21; break;
+                case 6: capstonesCount = 1; tilesCount = 30; break;
+                case 7: capstonesCount = 2; tilesCount = 40; break;
+                case 8: capstonesCount = 2; tilesCount = 50; break;
+            }
+            
+            whiteCapstones = blackCapstones = capstonesCount;
+            whiteTilesCount = blackTilesCount = tilesCount;
+            
+            moveCount = 0;
+            
+            squares = new Square[boardSize][boardSize];
+            for (int i = 0; i < b; i++) {
+                for (int j = 0; j < b; j++) {
+                    squares[i][j] = new Square(j, i+1);
+                }
+            }
+        }
+        
+        Board(int boardSize, int moveCount, int whiteCapstones,
+                int blackCapstones, int whiteTilesCount, int blackTilesCount,
+                Square[][] squares) {
+            this.boardSize = boardSize;
+            this.moveCount = moveCount;
+            this.whiteCapstones = whiteCapstones;
+            this.blackCapstones = blackCapstones;
+            this.whiteTilesCount = whiteTilesCount;
+            this.blackTilesCount = blackTilesCount;
+            this.squares = squares;
         }
         
         @Override
-        public Square clone() {
-            Square sq = new Square(file, row);
-            sq.graphNo = graphNo;
-            for(Character c: stack) {
-                sq.add(c);
-            }
-            return sq;
+        public Board clone() {
+            Board clone = new Board(boardSize, moveCount,
+                                whiteCapstones, blackCapstones,
+                                whiteTilesCount, blackTilesCount,
+                                getClonedSquares());
+            
+            return clone;
         }
-        boolean isEmpty() {
-            return stack.isEmpty();
-        }
-        void add(char c) {
-            stack.add(c);
-        }
-        int size() {
-            return stack.size();
-        }
-        char get(int i) {
-            return stack.get(i);
-        }
-        char pop() {
-            if(stack.size() > 0) {
-                char ret = topOfStack();
-                stack.remove(stack.size()-1);
-                return ret;
-            }
-            return 0;
-        }
-        char topOfStack() {
-            if(stack.isEmpty())
-                return 0;
 
-            return stack.get(stack.size()-1);
+        Square[][] getClonedSquares() {
+            Square[][] clone = new Square[boardSize][boardSize];
+
+            for(int i=0;i<boardSize;i++){
+                for(int j=0;j<boardSize;j++) {
+                    clone[i][j] = squares[i][j].clone();
+                }
+            }
+            return clone;
         }
+        
+        private Square getSquare(char file, int rank) {
+            if(!boundsCheck(file, rank))
+                return null;
+            return board.squares[rank-1][file-'A'];
+        }
+        
         @Override
         public String toString() {
-            return ((char)(file+'A'))+""+row+" "+graphNo;
+            StringBuilder sb = new StringBuilder();
+            sb.append("wc=").append(whiteCapstones).append(" bc=")
+                    .append(blackCapstones).append(" wt=")
+                    .append(whiteTilesCount).append(" bt=")
+                    .append(blackTilesCount).append(" mc=")
+                    .append(moveCount);
+            sb.append("\n").append(getBoardString());
+            return sb.toString();
         }
         
-        public String stackString() {
-            return stack.toString();
+        public String getBoardString() {
+            StringBuilder sb = new StringBuilder();
+            for(int i=boardSize;i>0;i--){
+                for(char j='A';j<boardSize+'A';j++){
+                    sb.append(getSquare(j, i).stackString()).append(" ");
+                }
+                sb.append("\n");
+            }
+            return sb.toString();
         }
     }
-    Square[][] board;
-    Stack<Square[][]> boardHistory;
+    
+    Board board;
+    Stack<Board> boardHistory;
 
     static int DEFAULT_SIZE = 5;
 
@@ -142,28 +239,9 @@ public class Game {
         
         time = System.currentTimeMillis();
 
-        if (b < 3 || b > 8) {
-            b = DEFAULT_SIZE;
-        }
-
-        boardSize = b;
-        int capstonesCount=0;
-        int tilesCount=0;
-        switch(b) {
-            case 3: capstonesCount = 0; tilesCount = 10; break;
-            case 4: capstonesCount = 0; tilesCount = 15; break;
-            case 5: capstonesCount = 1; tilesCount = 21; break;
-            case 6: capstonesCount = 1; tilesCount = 30; break;
-            case 7: capstonesCount = 2; tilesCount = 40; break;
-            case 8: capstonesCount = 2; tilesCount = 50; break;
-        }
-        whiteCapstones = blackCapstones = capstonesCount;
-        whiteTilesCount = blackTilesCount = tilesCount;
-        
-        moveCount = 0;
         abandoned = false;
         
-        board = new Square[boardSize][boardSize];
+        board = new Board(b);
         boardHistory = new Stack<>();
         
         no = ++gameNo;
@@ -172,14 +250,8 @@ public class Game {
         undoRequestedBy = null;
         
         moveList = Collections.synchronizedList(new ArrayList<String>());
-
-        for (int i = 0; i < b; i++) {
-            for (int j = 0; j < b; j++) {
-                board[i][j] = new Square(j, i+1);
-            }
-        }
         
-        boardHistory.push(getClonedBoard(board));//store empty position
+        boardHistory.push(board.clone());//store empty position
         spectators = Collections.synchronizedSet(new HashSet<Client>());
     }
     
@@ -208,47 +280,20 @@ public class Game {
         whenGameEnd();
     }
     
-    Square[][] getClonedBoard(Square[][] orig) {
-        Square[][] clone = new Square[boardSize][boardSize];
-        
-        for(int i=0;i<boardSize;i++){
-            for(int j=0;j<boardSize;j++) {
-                clone[i][j] = board[i][j].clone();
-            }
-        }
-        return clone;
-    }
-    
     void saveBoardPosition() {
-        Square[][] clone = getClonedBoard(board);
-        
-        boardHistory.push(clone);
-//        for(Square[][] sq: boardHistory) {
-//            for(int i=0;i<boardSize;i++) {
-//                for(int j=0;j<boardSize;j++) {
-//                    System.out.print(sq[i][j].stackString()+" ");
-//                }
-//                System.out.println("");
-//            }
-//            System.out.println("---");
-//        }
+        boardHistory.push(board.clone());
     }
     
     void undoPosition() {
-        boardHistory.pop();//discard cur pos
-        Square[][] hist = boardHistory.peek();//replace cur pos with top of stack
+        boardHistory.pop();//discard cur pos        
+        board = boardHistory.peek().clone();//replace cur pos with top of stack
         
-        for(int i=0;i<boardSize;i++){
-            for(int j=0;j<boardSize;j++) {
-                board[i][j] = hist[i][j].clone();
-            }
-        }
         moveList.remove(moveList.size()-1);
-        moveCount--;
+        System.out.println("after undo "+board);
     }
     
     void undo(Player p) {
-        if(moveCount <= 0) {
+        if(board.moveCount <= 0) {
             p.getClient().sendNOK();
             return;
         }
@@ -297,6 +342,7 @@ public class Game {
     void unSpectate(Client c) {
         spectators.remove(c);
     }
+    
     static void sendGameListTo(Client c) {
         for (Integer no : Game.games.keySet()) {
             c.sendWithoutLogging("GameList Add "+Game.games.get(no).shortDesc());
@@ -311,9 +357,9 @@ public class Game {
     String shortDesc(){
         StringBuilder sb=new StringBuilder("Game#"+no+" ");
         sb.append(white.getName()).append(" vs ").append(black.getName());
-        sb.append(", ").append(boardSize).append("x").append(boardSize).append(", ");
-        sb.append(originalTime/1000+", ");
-        sb.append(moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
+        sb.append(", ").append(board.boardSize).append("x").append(board.boardSize).append(", ");
+        sb.append(originalTime/1000).append(", ");
+        sb.append(board.moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
         return sb.toString();
     }
     
@@ -340,35 +386,18 @@ public class Game {
     @Override
     public String toString() {
         StringBuilder sb=new StringBuilder(shortDesc());
-        sb.append("\n").append(getBoardString());
-        return sb.toString();
-    }
-    
-    public String getBoardString() {
-        StringBuilder sb = new StringBuilder();
-        for(int i=boardSize;i>0;i--){
-            for(char j='A';j<boardSize+'A';j++){
-                sb.append(getSquare(j, i).stackString()).append(" ");
-            }
-            sb.append("\n");
-        }
+        sb.append("\n").append(board.getBoardString());
         return sb.toString();
     }
     
     private boolean boundsCheck(char file, int rank) {
         int fl = file - 'A';
         int rk = rank - 1;
-        return fl<boardSize && fl>=0 && rk<boardSize && rk>=0;
-    }
-    
-    private Square getSquare(char file, int rank) {
-        if(!boundsCheck(file, rank))
-            return null;
-        return board[rank-1][file-'A'];
+        return fl<board.boardSize && fl>=0 && rk<board.boardSize && rk>=0;
     }
     
     private boolean isWhitesTurn() {
-        return moveCount%2 == 0;
+        return board.moveCount%2 == 0;
     }
     
     private boolean turnOf(Player p) {
@@ -377,7 +406,7 @@ public class Game {
     }
     
     String sqState(char file, int rank) {
-        Square sq = getSquare(file, rank);
+        Board.Square sq = board.getSquare(file, rank);
         if(sq==null)
             return "[]";
         return sq.stackString();
@@ -386,8 +415,8 @@ public class Game {
     void checkOutOfPieces() {
         if(gameState!=gameS.NONE)
             return;
-        if((whiteTilesCount==0 && whiteCapstones==0) ||
-                (blackTilesCount==0 && blackCapstones==0)){
+        if((board.whiteTilesCount==0 && board.whiteCapstones==0) ||
+                (board.blackTilesCount==0 && board.blackCapstones==0)){
             System.out.println("out of pieces.");
             findWhoWon();
         }
@@ -400,7 +429,7 @@ public class Game {
     }
     
     void updateTime(Client c) {
-        if(whiteTime == -1 || moveCount == 0)
+        if(whiteTime == -1 || board.moveCount == 0)
             return;
         
         long curTime = System.nanoTime();
@@ -468,7 +497,7 @@ public class Game {
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
           //      +capstone+" wall="+wall);
-        Square sq = getSquare(file, rank);
+        Board.Square sq = board.getSquare(file, rank);
         if(!turnOf(p))
             return new Status("Not your turn", false);
         
@@ -482,7 +511,7 @@ public class Game {
                 ch = FLAT;
             
             //First move should always be a flat
-            if(moveCount/2 == 0 && !isFlat(ch))
+            if(board.moveCount/2 == 0 && !isFlat(ch))
                 return new Status("First move should be flat", false);
             
             //White places with capitals
@@ -490,28 +519,28 @@ public class Game {
                 ch = (char)(ch - 'a'+'A');
             
             //first moves should be played with opponent pieces
-            if(moveCount/2 == 0)
+            if(board.moveCount/2 == 0)
                 ch = Character.isUpperCase(ch)?Character.toLowerCase(ch):
                         Character.toUpperCase(ch);
             
             //check if enough capstones, and decrement if there are
             if(isCapstone(ch)) {
-                int caps = isWhitesTurn()?whiteCapstones:blackCapstones;
+                int caps = isWhitesTurn()?board.whiteCapstones:board.blackCapstones;
                 if(caps==0)
                     return new Status("You're out of capstones", false);
                 if(isWhitesTurn())
-                    whiteCapstones--;
+                    board.whiteCapstones--;
                 else
-                    blackCapstones--;
+                    board.blackCapstones--;
             } else {
                 if(isWhitesTurn())
-                    whiteTilesCount--;
+                    board.whiteTilesCount--;
                 else
-                    blackTilesCount--;
+                    board.blackTilesCount--;
             }
             
             sq.add(ch);
-            moveCount++;
+            board.moveCount++;
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
             moveList.add(move.trim());
             saveBoardPosition();
@@ -530,7 +559,7 @@ public class Game {
         }
     }
     
-    Player stackController(Square sq) {
+    Player stackController(Board.Square sq) {
         return Character.isUpperCase(sq.topOfStack())?white:black;
     }
     
@@ -560,10 +589,10 @@ public class Game {
     
     String getPTN() {
         String ret="";
-        for(int i=0;i<this.boardSize;i++){
+        for(int i=0;i<board.boardSize;i++){
             int xcnt=0;
-            for(int j=0;j<this.boardSize;j++){
-                Square sq = board[i][j];
+            for(int j=0;j<board.boardSize;j++){
+                Board.Square sq = board.squares[i][j];
                 if(sq.isEmpty())
                     xcnt=0;
                 else {
@@ -577,13 +606,13 @@ public class Game {
                         else if(isCapstone(ch))
                             cell+="C";
                     }
-                    if(j!=this.boardSize-1)
+                    if(j!=board.boardSize-1)
                         cell+=",";
                 }
             }
             ret+="/";
         }
-        ret+=" "+this.moveCount+" "+(isWhitesTurn()?"1":"2");
+        ret+=" "+board.moveCount+" "+(isWhitesTurn()?"1":"2");
         return ret;
     }
     
@@ -597,15 +626,15 @@ public class Game {
             return new Status("Not your turn", false);
         
         //first moves should be place moves
-        if(moveCount/2==0)
+        if(board.moveCount/2==0)
             return new Status("First move should be place", false);
         
         //moves should be horizontal or vertical
         if(f1!=f2 && r1!=r2)
             return new Status("Move should be in straight line", false);
         
-        Square startSq = getSquare(f1, r1);
-        Square endSq = getSquare(f2, r2);
+        Board.Square startSq = board.getSquare(f1, r1);
+        Board.Square endSq = board.getSquare(f2, r2);
         //bounds checking of squares
         if(startSq == null || endSq == null)
             return new Status("Out of bounds", false);
@@ -618,7 +647,7 @@ public class Game {
         int carrySize=0;
         for(int v:vals)
             carrySize+=v;
-        if(carrySize>boardSize || carrySize>startSq.size())
+        if(carrySize>board.boardSize || carrySize>startSq.size())
             return new Status("Invalid move", false);
         
         //length of vals should be one less than no. of squares involved
@@ -640,7 +669,7 @@ public class Game {
         
         SquareIterator sqIt = new SquareIterator(this, f1, r1, f2, r2);
         //check if none of the intermediate places are walls or capstones
-        for(Square sqr=sqIt.next();sqr!=null;sqr=sqIt.next()){
+        for(Board.Square sqr=sqIt.next();sqr!=null;sqr=sqIt.next()){
             if(sqr==startSq)
                 continue;
             char ttop = sqr.topOfStack();
@@ -666,7 +695,7 @@ public class Game {
         int count=-1;
         Stack<Character> moveStack = new Stack<>();
         
-        for(Square sqr=sqIt.next();sqr!=null;
+        for(Board.Square sqr=sqIt.next();sqr!=null;
                 sqr=sqIt.next(),count++){
             assert(count<vals.length);
             
@@ -689,7 +718,7 @@ public class Game {
                 }
             }
         }
-        moveCount++;
+        board.moveCount++;
         
         String move = "M "+f1+r1+" "+f2+r2+" ";
         for(int val: vals)
@@ -764,7 +793,7 @@ public class Game {
         try {
             Statement stmt = Database.connection.createStatement();
             String sql = "INSERT INTO games "+
-                    "VALUES (NULL,"+time+","+boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
+                    "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
                     gameStateString()+"');";
             //System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
@@ -798,9 +827,9 @@ public class Game {
     }
     void findWhoWon() {
         int blackCount=0, whiteCount=0;
-        for(int i=0;i<this.boardSize;i++){
-            for(int j=0;j<this.boardSize;j++){
-                char ch = board[i][j].topOfStack();
+        for(int i=0;i<board.boardSize;i++){
+            for(int j=0;j<board.boardSize;j++){
+                char ch = board.squares[i][j].topOfStack();
                 if(ch!=0 && !isWall(ch) && !isCapstone(ch)){
                     if(isWhite(ch))
                         whiteCount++;
@@ -819,9 +848,9 @@ public class Game {
     void checkOutOfSquares() {
         if(gameState!=gameS.NONE)
             return;
-        for(int i=0;i<this.boardSize;i++){
-            for(int j=0;j<this.boardSize;j++){
-                if(board[i][j].isEmpty())
+        for(int i=0;i<board.boardSize;i++){
+            for(int j=0;j<board.boardSize;j++){
+                if(board.squares[i][j].isEmpty())
                     return;
             }
         }
@@ -833,15 +862,15 @@ public class Game {
         boolean whiteWin=false, blackWin=false;
         class Graph {
             private int lf, rf, tr, br;
-            private ArrayList<Square> squares;
+            private ArrayList<Board.Square> squares;
             int no;
             
             Graph(int i, int j) {
-                no = i+j*boardSize;
+                no = i+j*board.boardSize;
                 lf=rf=tr=br=1000;
                 squares = new ArrayList<>();
             }
-            boolean add(Square sq) {
+            boolean add(Board.Square sq) {
                if(lf==1000 || sq.file < lf) lf = sq.file;
                if(rf==1000 || sq.file > rf) rf = sq.file;
                if(br==1000 || sq.row < br) br = sq.row-1;
@@ -851,14 +880,14 @@ public class Game {
                sq.graphNo = no;
                //System.out.println("add "+no+" "+lf+" "+rf+" "+br+" "+tr);
                
-               return (lf==0 && rf == boardSize-1) || (br==0 && tr==boardSize-1);
+               return (lf==0 && rf == board.boardSize-1) || (br==0 && tr==board.boardSize-1);
             }
             boolean merge(Graph g) {
                 if(g==this)
                     return false;
                 boolean ret=false;
                 //System.out.println("merge "+g.no+" with "+no);
-                for(Square sq: g.squares) {
+                for(Board.Square sq: g.squares) {
                     ret |= add(sq);
                     sq.graphNo = no;
                 }
@@ -871,37 +900,37 @@ public class Game {
                 StringBuilder sb=new StringBuilder();
                 sb.append("(").append(no).append(")");
                 sb.append("[");
-                for(Square sq: squares)
+                for(Board.Square sq: squares)
                     sb.append(sq).append(" ");
                 sb.append("]");
                 return sb.toString();
             }
         }
-        Graph graph[] = new Graph[boardSize*boardSize];
-        for(int i=0;i<boardSize;i++)
-            for(int j=0;j<boardSize;j++)
-                graph[i+j*boardSize] = new Graph(i, j);
+        Graph graph[] = new Graph[board.boardSize*board.boardSize];
+        for(int i=0;i<board.boardSize;i++)
+            for(int j=0;j<board.boardSize;j++)
+                graph[i+j*board.boardSize] = new Graph(i, j);
                 
-        for(int i=0;i<boardSize;i++){
-            for(int j=0;j<boardSize;j++){
-                Square sq = getSquare((char)('A'+i), j+1);
+        for(int i=0;i<board.boardSize;i++){
+            for(int j=0;j<board.boardSize;j++){
+                Board.Square sq = board.getSquare((char)('A'+i), j+1);
                 sq.graphNo = -1;
                 
                 char ch = sq.topOfStack();
                 if(ch==0 || isWall(ch))
                     continue;
-                graph[i+j*boardSize].add(sq);
+                graph[i+j*board.boardSize].add(sq);
                 
                 boolean left=false;
                 boolean over=false;
                 
-                Square lsq = getSquare((char)('A'+i-1), j+1);
+                Board.Square lsq = board.getSquare((char)('A'+i-1), j+1);
                 //System.out.println("lsq "+lsq);
                 if(lsq!=null){
                     char lch = lsq.topOfStack();
                     if(lch!=0 && isWhite(ch)==isWhite(lch) && !isWall(lch)){
-                        over = graph[lsq.graphNo].merge(graph[i+j*boardSize]);
-                        graph[i+j*boardSize] = graph[lsq.graphNo];
+                        over = graph[lsq.graphNo].merge(graph[i+j*board.boardSize]);
+                        graph[i+j*board.boardSize] = graph[lsq.graphNo];
                     }
                 }
                 if(over) {
@@ -911,12 +940,12 @@ public class Game {
                         blackWin=true;
                 }
                 
-                Square tsq = getSquare((char)('A'+i), j-1+1);
+                Board.Square tsq = board.getSquare((char)('A'+i), j-1+1);
                 if(tsq!=null){
                     char tch = tsq.topOfStack();
                     if(tch!=0 && isWhite(ch)==isWhite(tch) && !isWall(tch)){
-                        over = graph[tsq.graphNo].merge(graph[i+j*boardSize]);
-                        graph[i+j*boardSize] = graph[tsq.graphNo];
+                        over = graph[tsq.graphNo].merge(graph[i+j*board.boardSize]);
+                        graph[i+j*board.boardSize] = graph[tsq.graphNo];
                     }
                 }
                 if(over) {
@@ -981,17 +1010,17 @@ public class Game {
             }
         }
         
-        Square next() {
+        Board.Square next() {
             if(count >= total)
                 return null;
             
-            Square ret = null;
+            Board.Square ret = null;
             
             switch(direction) {
-                case EAST: ret = game.getSquare((char)(f1+count), r1); break;
-                case WEST: ret = game.getSquare((char)(f1-count), r1); break;
-                case NORTH: ret = game.getSquare(f1, r1+count); break;
-                case SOUTH: ret = game.getSquare(f1, r1-count); break;
+                case EAST: ret = game.board.getSquare((char)(f1+count), r1); break;
+                case WEST: ret = game.board.getSquare((char)(f1-count), r1); break;
+                case NORTH: ret = game.board.getSquare(f1, r1+count); break;
+                case SOUTH: ret = game.board.getSquare(f1, r1-count); break;
             }
             count++;
             return ret;
