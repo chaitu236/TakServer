@@ -525,11 +525,13 @@ public class Client extends Thread {
                     }
                     //Shout
                     else if ((m=shoutPattern.matcher(temp)).find()){
+                        String msg = "<"+player.getName()+"> "+m.group(1);
+                        
                         if(!player.isGagged()) {
-                            String msg = "<"+player.getName()+"> "+m.group(1);
                             sendAllOnline("Shout "+msg);
                             IRCBridge.send(msg);
-                        }
+                        } else//send to only gagged player
+                            sendWithoutLogging("Shout "+msg);
                     }
                     //sudo
                     else if ((m=sudoPattern.matcher(temp)).find()){
