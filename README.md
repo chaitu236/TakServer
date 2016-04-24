@@ -1,6 +1,6 @@
 # TakServer
 
-*Last updated on 04/08/2016*
+*Last updated on 04/24/2016*
 
 Server to handle online TAK games
 
