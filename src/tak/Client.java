@@ -108,6 +108,9 @@ public class Client extends Thread {
     String shoutString = "^Shout ([^\n\r]{1,256})";
     Pattern shoutPattern;
     
+    String ingameString = "^Game#(\\d+) Chat ([^\n\r]{1,256})";
+    Pattern ingamePattern;
+    
     String pingString = "^PING$";
     Pattern pingPattern;
     
@@ -171,6 +174,7 @@ public class Client extends Thread {
         unobservePattern = Pattern.compile(unobserveString);
         getSqStatePattern = Pattern.compile(getSqStateString);
         shoutPattern = Pattern.compile(shoutString);
+        ingamePattern = Pattern.compile(ingameString);
         pingPattern = Pattern.compile(pingString);
         loginGuestPattern = Pattern.compile(loginGuestString);
         
@@ -500,6 +504,26 @@ public class Client extends Thread {
                             sendOK();
                       else
                             sendNOK();
+                    }
+                    //Relay ingame chat.
+                    else if (game != null && (m=ingamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        String msg = "<" + player.getName() + "> " + m.group(2);
+                        if (game.white == player || game.black == player) {
+                            msg = " PlayerChat " + msg;
+                            if(!player.isGagged()) {
+                                game.sendToOtherPlayer(game.white, "Game#" + game.no + msg);
+                                game.sendToOtherPlayer(game.black, "Game#" + game.no + msg);
+                                game.sendToSpectators("Game#" + game.no + msg);
+                            } else//send to only gagged player
+                                sendWithoutLogging("Game#" + game.no + msg);
+                        }
+                        else {
+                            msg = " ObserverChat " + msg;
+                            if(!player.isGagged()) {
+                                game.sendToSpectators("Game#" + game.no + msg);
+                            } else//send to only gagged player
+                                sendWithoutLogging("Game#" + game.no + msg);
+                        }
                     }
                     //Show game state
                     else if (game != null && (m=gamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
