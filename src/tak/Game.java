@@ -55,7 +55,7 @@ public class Game {
     
     static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
     static Set<Client> gameListeners = Collections.synchronizedSet(new HashSet<Client>());
-    
+
     class Board {
         int boardSize;
         int moveCount;
@@ -64,11 +64,13 @@ public class Game {
 
         int whiteTilesCount;
         int blackTilesCount;
-        
+
         class Square {
             private int file, row;
             private ArrayList<Character> stack;
             int graphNo;
+            boolean markedByPlayer = false;
+            boolean markedByObserver = false;
 
             Square(int f, int r) {
                 stack = new ArrayList<>();
@@ -214,6 +216,22 @@ public class Game {
             }
             return sb.toString();
         }
+        public boolean isMarkedByPlayer()
+        {
+            return this.markedByPlayer;
+        }
+        public void setMarkedByPlayer(boolean marked)
+        {
+            this.markedByPlayer = marked;
+        }
+        public boolean isMarkedByObserver()
+        {
+            return this.markedByObserver;
+        }
+        public void setMarkedByObserver(boolean marked)
+        {
+            this.markedByObserver = marked;
+        }
     }
     
     Board board;
@@ -268,6 +286,7 @@ public class Game {
     void newSpectator(Client c) {
         c.send("Observe "+shortDesc());
         sendMoveListTo(c);
+        sendMarkedListTo(c);
         spectators.add(c);
         updateTime(c);
     }
@@ -279,7 +298,31 @@ public class Game {
             gameState = gameS.WHITE;
         whenGameEnd();
     }
-    
+
+    boolean setMarked(boolean marked, String field, Player player) {
+        int file = field.charAt(0) - 'a';
+        int rank = field.charAt(1) - 1;
+        if (file < 0 || file >= this.boardSize
+            || rank < 0 || rank >= this.boardSize)
+            return false;
+        
+        String msg;
+        if (player == this.white || player == this.black) {
+            msg = "Game#" + no
+                    + (marked ? " Mark_Player " : " Unmark_Player ") + field;
+            this.board[rank][file].setMarkedByPlayer(marked);
+            sendToOtherPlayer(white, msg);
+            sendToOtherPlayer(black, msg);
+        }
+        else {
+            msg = "Game#" + no
+                    + (marked ? " Mark_Observer " : " Unmark_Observer ") + field;
+            this.board[rank][file].setMarkedByObserver(marked);
+        }
+        sendToSpectators(msg);
+        return true;
+    }
+
     void saveBoardPosition() {
         boardHistory.push(board.clone());
     }
@@ -351,6 +394,17 @@ public class Game {
     void sendMoveListTo(Client c) {
         for(String move:moveList)
             c.sendWithoutLogging("Game#"+no+" "+move);
+    }
+    
+    void sendMarkedListTo(Client c) {
+      for(int i = 0; i < boardSize; ++i)
+        for (int j = 0; j < boardSize; ++j)
+        {
+          if (this.board[i][j].isMarkedByPlayer())
+            c.sendWithoutLogging("Mark_Player " + ((char) (j + 'a')) + (i + 1));
+          if (this.board[i][j].isMarkedByObserver())
+            c.sendWithoutLogging("Mark_Observer " + ((char) (j + 'a')) + (i + 1));
+        }
     }
     
     String shortDesc(){
