@@ -956,7 +956,7 @@ public class Game {
             }
         }
         if(whiteWin && blackWin){
-            gameState = gameS.DRAW;
+            gameState = isWhitesTurn()?gameS.BLACK_ROAD:gameS.WHITE_ROAD;
         } else if (whiteWin) {
             gameState = gameS.WHITE_ROAD;
         } else if (blackWin) {
