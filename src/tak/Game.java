@@ -872,8 +872,8 @@ public class Game {
             boolean add(Board.Square sq) {
                if(lf==1000 || sq.file < lf) lf = sq.file;
                if(rf==1000 || sq.file > rf) rf = sq.file;
-               if(br==1000 || sq.row < br) br = sq.row-1;
-               if(tr==1000 || sq.row > tr) tr = sq.row-1;
+               if(br==1000 || sq.row-1 < br) br = sq.row-1;
+               if(tr==1000 || sq.row-1 > tr) tr = sq.row-1;
                
                squares.add(sq);
                sq.graphNo = no;
@@ -892,12 +892,13 @@ public class Game {
                 }
                 g.no = no;
                 //System.out.println("      "+no+" "+lf+" "+rf+" "+br+" "+tr);
+                //System.out.println(this);
                 return ret;
             }
             @Override
             public String toString() {
                 StringBuilder sb=new StringBuilder();
-                sb.append("(").append(no).append(")");
+                sb.append("(").append(no).append("::").append(lf+" "+rf+" "+br+" "+tr).append(")");
                 sb.append("[");
                 for(Board.Square sq: squares)
                     sb.append(sq).append(" ");
