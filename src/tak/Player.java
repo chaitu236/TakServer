@@ -122,7 +122,7 @@ public class Player {
     public static Player createPlayer(String name, String email) {
         Player np = new Player(name, email, new BigInteger(130, random).toString(32), false);
         try {
-            Statement stmt = Database.connection.createStatement();
+            Statement stmt = Database.playersConnection.createStatement();
             String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
                     "VALUES ("+np.id+",'"+np.name+"','"+np.password+"','"+np.email+"',"+
                     np.r4+","+np.r5+","+np.r6+","+np.r7+","+np.r8+");";
@@ -147,7 +147,7 @@ public class Player {
         this.r4 = r4;
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set r4 = "+r4+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -159,7 +159,7 @@ public class Player {
         this.r5 = r5;
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set r5 = "+r5+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -171,7 +171,7 @@ public class Player {
         this.r6 = r6;
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set r6 = "+r6+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -183,7 +183,7 @@ public class Player {
         this.r7 = r7;
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set r7 = "+r7+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -195,7 +195,7 @@ public class Player {
         this.r8 = r8;
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set r8 = "+r8+" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -208,7 +208,7 @@ public class Player {
         
         Statement stmt;
         try {
-            stmt = Database.connection.createStatement();
+            stmt = Database.playersConnection.createStatement();
             String sql = "UPDATE players set password = \""+this.password+"\" where id="+id+";";
             stmt.executeUpdate(sql);
         } catch (SQLException ex) {
@@ -254,7 +254,7 @@ public class Player {
     
     public static void loadFromDB() {
         idCount=0;
-        try (Statement stmt = Database.connection.createStatement();
+        try (Statement stmt = Database.playersConnection.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT * FROM players;")) {
             while(rs.next()) {
                 Player np = new Player(rs.getString("name"),

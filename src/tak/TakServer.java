@@ -40,6 +40,7 @@ public class TakServer extends Thread{
         Settings.parse();
         Database.initConnection();
         Player.loadFromDB();
+        Game.setGameNo();
         
         IRCBridge.init();
         

@@ -5,6 +5,7 @@
  */
 package tak;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -253,6 +254,15 @@ public class Game {
         
         boardHistory.push(board.clone());//store empty position
         spectators = Collections.synchronizedSet(new HashSet<Client>());
+    }
+    
+    public static void setGameNo() {
+        try (Statement stmt = Database.gamesConnection.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM games;")) {
+            gameNo = rs.getInt(1);
+        } catch (SQLException ex) {
+            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     static void addGame(Game g) {
@@ -790,7 +800,7 @@ public class Game {
     
     void saveToDB() {
         try {
-            Statement stmt = Database.connection.createStatement();
+            Statement stmt = Database.gamesConnection.createStatement();
             String sql = "INSERT INTO games "+
                     "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
                     gameStateString()+"');";
@@ -1032,7 +1042,7 @@ public class Game {
     public static void main(String[] args) {
         Database.initConnection();
         try {
-            Statement stmt = Database.connection.createStatement();
+            Statement stmt = Database.gamesConnection.createStatement();
             stmt.executeUpdate("CREATE TABLE games " +
                     "(id INTEGER PRIMARY KEY," +
                     " date INT," +
