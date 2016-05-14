@@ -81,7 +81,7 @@ public class IRCBridge {
                                 String user = line.split("!")[0].split(":")[1];
                                 String msg = line.split("PRIVMSG "+channel+" :")[1];
                                 Client.sendAllOnline("Shout <IRC> <"+user+"> "+msg);
-                                TakServer.Log("IRC::"+msg);
+                                TakServer.Log("IRC:"+user+":"+msg);
                             }
                         }
                     }
