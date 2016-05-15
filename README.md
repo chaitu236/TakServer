@@ -17,7 +17,7 @@ The client to server commands and their format is as below
 |Register **username email** |Register with the given username and email|
 |Login **username password** |Login with the username and password|
 |Login Guest |Login as a guest|
-|Seek **no** **time** |Seeks a game of board size **no** with time per player **time** specified in seconds|
+|Seek **no** **time** **W\|B** |Seeks a game of board size **no** with time per player **time** specified in seconds and an optional choice of color **W** for white, **B** for black|
 |Accept **no** |Accepts the seek with the number **no**|
 |Game#**no** P **Sq** C\|W |Sends a 'Place' move to the specified game no. The optional suffix 'C' or 'W' denote if it is a capstone or a wall (standing stone)|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|Sends a 'Move' move to the specified game no. **Sq1** is beginning square, **Sq2** is ending square, **no1**, **no2**, **no3**.. are the no. of pieces dropped in the in-between squares (including the last square)|
@@ -59,8 +59,8 @@ The list does not include error messages, you're free to poke around and figure 
 |Game#**no** RemoveUndo |Opponent removes his undo request|
 |Game#**no** Undo |Undo the last move. Client is supposed to keep track of previous board states and undo to the last state.|
 |Game#**no** Abandoned|Game number **no** is abandoned by the opponent as he quit. Clients can treat this as resign.|
-|Seek new **no** **name** **boardsize** **time** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player|
-|Seek remove **no** **name** **boardsize** **time** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
+|Seek new **no** **name** **boardsize** **time** **W\B** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player and an optional color choice for seek poster|
+|Seek remove **no** **name** **boardsize** **time** **W\B** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
 |Observe Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing the game number **no** of board size **size** with original time setting of **origin_time** seconds where **moves** half-moves are played and it is **player_name**'s turn to move|
 |Shout \<**player**\> **text** |Chat message from **player**|
 |Message **text** |A message from server. Might be used to indicate announcements like name accepted/server going down, etc|
