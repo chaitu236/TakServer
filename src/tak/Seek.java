@@ -21,22 +21,25 @@ public class Seek {
     int boardSize;
     int no;
     int time;//time in seconds for each side
+    enum COLOR {WHITE, BLACK, ANY};
+    COLOR color;
     
     static int seekNo=0;
     
     static Map<Integer, Seek> seeks = Collections.synchronizedMap(new HashMap<Integer, Seek>());
     static Set<Client> seekListeners = Collections.synchronizedSet(new HashSet<Client>());
     
-    static Seek newSeek(Client c, int b, int t) {
-        Seek sk = new Seek(c, b, t);
+    static Seek newSeek(Client c, int b, int t, COLOR clr) {
+        Seek sk = new Seek(c, b, t, clr);
         addSeek(sk);
         return sk;
     }
     
-    Seek(Client c, int b, int t) {
+    Seek(Client c, int b, int t, COLOR clr) {
         client = c;
         no = ++seekNo;
         time = t;
+        color = clr;
         
         if (b < 3 || b > 8)
             b = DEFAULT_SIZE;
@@ -81,6 +84,12 @@ public class Seek {
     }
     @Override
     public String toString() {
-        return no+" "+client.player.getName()+" "+boardSize+" "+time;
+        String clr = "";
+        if(color == COLOR.WHITE)
+            clr = "W";
+        else if(color == COLOR.BLACK)
+            clr = "B";
+        
+        return (no+" "+client.player.getName()+" "+boardSize+" "+time+" "+clr).trim();
     }
 }

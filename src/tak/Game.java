@@ -228,10 +228,24 @@ public class Game {
     static final char WALL='w';
     static final char CAPSTONE='c';
 
-    Game(Player p1, Player p2, int b, int t) {
+    /**
+     * 
+     * @param p1: player who accepted the Seek
+     * @param p2: player who posted the seek
+     * @param b: board size
+     * @param t: time in seconds
+     * @param clr: color choice of p2
+     */
+    Game(Player p1, Player p2, int b, int t, Seek.COLOR clr) {
         int rand = new Random().nextInt(99);
-        white = (rand>=50)?p1:p2;
-        black = (rand>=50)?p2:p1;
+        
+        if(clr == Seek.COLOR.ANY) {
+            white = (rand>=50)?p1:p2;
+            black = (rand>=50)?p2:p1;
+        } else {
+            white = (clr == Seek.COLOR.WHITE)?p2:p1;
+            black = (clr == Seek.COLOR.WHITE)?p1:p2;
+        }
         
         originalTime = whiteTime = blackTime = t*1000;
         
