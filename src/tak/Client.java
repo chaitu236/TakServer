@@ -77,6 +77,9 @@ public class Client extends Thread {
     
     String resignString = "^Game#(\\d+) Resign";
     Pattern resignPattern;
+    
+    String markString = "^Game#(\\d+) (Mark|Unmark) ([A-Ha-h][1-8])";
+    Pattern markPattern;
 
     String seekString = "^Seek (\\d) (\\d+)( W)?( B)?";
     Pattern seekPattern;
@@ -104,6 +107,9 @@ public class Client extends Thread {
     
     String shoutString = "^Shout ([^\n\r]{1,256})";
     Pattern shoutPattern;
+    
+    String ingameString = "^Game#(\\d+) Chat ([^\n\r]{1,256})";
+    Pattern ingamePattern;
     
     String pingString = "^PING$";
     Pattern pingPattern;
@@ -157,6 +163,7 @@ public class Client extends Thread {
         drawPattern = Pattern.compile(drawString);
         removeDrawPattern = Pattern.compile(removeDrawString);
         resignPattern = Pattern.compile(resignString);
+        markPattern = Pattern.compile(markString);
         wrongRegisterPattern = Pattern.compile(wrongRegisterString);
         seekPattern = Pattern.compile(seekString);
         acceptSeekPattern = Pattern.compile(acceptSeekString);
@@ -167,6 +174,7 @@ public class Client extends Thread {
         unobservePattern = Pattern.compile(unobserveString);
         getSqStatePattern = Pattern.compile(getSqStateString);
         shoutPattern = Pattern.compile(shoutString);
+        ingamePattern = Pattern.compile(ingameString);
         pingPattern = Pattern.compile(pingString);
         loginGuestPattern = Pattern.compile(loginGuestString);
         
@@ -491,6 +499,35 @@ public class Client extends Thread {
                             Game.removeGame(game);
                             game = null;
                             other.game = null;
+                        }
+                    }
+                    //Mark/Unmark target board field.
+                    else if (game != null && (m=markPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                      String function = m.group(2);
+                      String field = m.group(3).toLowerCase();
+                      if (game.setMarked(function.equals("Mark"), field, player))
+                            sendOK();
+                      else
+                            sendNOK();
+                    }
+                    //Relay ingame chat.
+                    else if (game != null && (m=ingamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
+                        String msg = "<" + player.getName() + "> " + m.group(2);
+                        if (game.white == player || game.black == player) {
+                            msg = " PlayerChat " + msg;
+                            if(!player.isGagged()) {
+                                game.sendToOtherPlayer(game.white, "Game#" + game.no + msg);
+                                game.sendToOtherPlayer(game.black, "Game#" + game.no + msg);
+                                game.sendToSpectators("Game#" + game.no + msg);
+                            } else//send to only gagged player
+                                sendWithoutLogging("Game#" + game.no + msg);
+                        }
+                        else {
+                            msg = " ObserverChat " + msg;
+                            if(!player.isGagged()) {
+                                game.sendToSpectators("Game#" + game.no + msg);
+                            } else//send to only gagged player
+                                sendWithoutLogging("Game#" + game.no + msg);
                         }
                     }
                     //Show game state
