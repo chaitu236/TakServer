@@ -38,6 +38,7 @@ public class Settings {
         
         parseEmail();
         parseIRC();
+        parseGame();
     }
     
     private static void parseEmail() {
@@ -62,5 +63,14 @@ public class Settings {
         IRCBridge.login = element.getElementsByTagName("login").item(0).getTextContent();
         IRCBridge.channel = element.getElementsByTagName("channel").item(0).getTextContent();
         IRCBridge.password = element.getElementsByTagName("password").item(0).getTextContent();
+    }
+    
+    private static void parseGame() {
+        NodeList nList = doc.getElementsByTagName("game");
+        Node node = nList.item(0);
+        Element element = (Element)node;
+        
+        Game.reconnectionTime = Integer.parseInt(element.getElementsByTagName("reconnection-time").
+                                            item(0).getTextContent());
     }
 }

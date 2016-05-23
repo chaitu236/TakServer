@@ -94,10 +94,17 @@ public class Player {
             client.sendWithoutLogging(msg);
     }
     
-    public void login(Client client) {
-        this.client = client;
+    public void login(Client c) {
+        this.client = c;
         if(game != null)
             game.playerRejoin(this);
+    }
+    
+    public void logout() {
+        if(client != null) {
+            client.disconnect();
+            this.client = null;
+        }
     }
     
     public boolean isMod() {
@@ -128,7 +135,7 @@ public class Player {
         return gag;
     }
     
-    public void logout() {
+    public void loggedOut() {
         this.client = null;
         if(guest) {
             Player.modList.remove(this);

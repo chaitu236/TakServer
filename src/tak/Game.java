@@ -58,6 +58,8 @@ public class Game {
     static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
     static Set<Player> gameListeners = Collections.synchronizedSet(new HashSet<Player>());
     
+    public static int reconnectionTime;
+    
     class Board {
         int boardSize;
         int moveCount;
@@ -1015,14 +1017,16 @@ public class Game {
             Game.removeGame(this);
             return;
         }
-        otherPlayer.send("Message "+p.getName()+" has disconnected. They have 1 minute to reconnect");
-        sendToSpectators("Message "+p.getName()+" has disconnected. They have 1 minute to reconnect");
+        otherPlayer.send("Message "+p.getName()+" has disconnected. They have "+
+                                    reconnectionTime +" seconds to reconnect");
+        sendToSpectators("Message "+p.getName()+" has disconnected. They have "+
+                                    reconnectionTime +" seconds to reconnect");
         disconnectionTimer = new Timer();
         disconnectionTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 playerQuit(white.isLoggedIn()?black:white);
-            }}, 60*1000);
+            }}, reconnectionTime*1000);
     }
     
     void playerRejoin(Player p) {

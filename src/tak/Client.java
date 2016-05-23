@@ -139,7 +139,7 @@ public class Client extends Thread {
     Client(Socket socket) {
         this.socket = socket;
         try {
-            this.socket.setSoTimeout(90*1000);
+            this.socket.setSoTimeout(60*1000);
             this.socket.setTcpNoDelay(true);
         } catch (SocketException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
@@ -249,20 +249,20 @@ public class Client extends Thread {
     void clientQuit() throws IOException {
         clientConnections.remove(this);
         
-        Game game = player.getGame();
-        if(game!=null){
-            game.playerDisconnected(player);
-        }
-
-        Seek.unregisterListener(this);
-        Game.unregisterGameListListener(player);
-        removeSeeks();
-        unspectateAll();
-//        if(game!=null)
-//            Game.removeGame(game);
-
         if (player != null) {
-            player.logout();
+            Game game = player.getGame();
+            if(game!=null){
+                game.playerDisconnected(player);
+            }
+
+            Seek.unregisterListener(this);
+            Game.unregisterGameListListener(player);
+            removeSeeks();
+            unspectateAll();
+    //        if(game!=null)
+    //            Game.removeGame(game);
+
+            player.loggedOut();
             sendAllOnline("Online "+(--onlineClients));
         }
 
@@ -274,9 +274,10 @@ public class Client extends Thread {
         TakServer.Log(clientNo+":"+((player!=null)?player.getName():"")+":"+obj);
     }
     
-    void kick() {
+    void disconnect() {
         try {
-            clientReader.close();
+            //clientReader.close();
+            socket.close();
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -327,9 +328,21 @@ public class Client extends Thread {
 
                                 if(!pass.equals(tplayer.getPassword())) {
                                     send("Authentication failure");
-                                } else if(tplayer.isLoggedIn()) {
-                                    send("You're already logged in");
+//                                } else if(tplayer.isLoggedIn()) {
+//                                    send("You're already logged in");
                                 } else {
+                                    if(tplayer.isLoggedIn()) {
+                                        Client oldClient = tplayer.getClient();
+                                        tplayer.send("Message You've logged in from another window. Disconnecting");
+                                        tplayer.logout();
+                                        //Wait for other connection to close before logging in
+                                        try {
+                                            oldClient.join();
+                                        } catch (InterruptedException ex) {
+                                            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                    }
+                                    
                                     player = tplayer;
 
                                     send("Welcome "+player.getName()+"!");
@@ -550,6 +563,7 @@ public class Client extends Thread {
             }
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            //Log("Stream closed");
         } finally {
             try {
                 clientQuit();
@@ -637,7 +651,7 @@ public class Client extends Thread {
                 return;
             }
             
-            c.kick();
+            c.disconnect();
             sendCmdReply(p.getName()+" kicked");
             
         }
