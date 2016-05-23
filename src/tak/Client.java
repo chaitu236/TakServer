@@ -38,7 +38,6 @@ public class Client extends Thread {
 
     static Set<Client> clientConnections = new HashSet<>();
 
-    Game game = null;
     Seek seek = null;
     ArrayList<Game> spectating;
 
@@ -201,8 +200,7 @@ public class Client extends Thread {
 
     void send(String st) {
         Log("Send:"+st);
-        clientWriter.println(st);
-        clientWriter.flush();
+        sendWithoutLogging(st);
     }
     
     void sendCmdReply(String st) {
@@ -223,7 +221,7 @@ public class Client extends Thread {
     
     void unspectateAll() {
         for(Game g: spectating)
-            g.unSpectate(this);
+            g.unSpectate(player);
         spectating.clear();
     }
     
@@ -250,16 +248,18 @@ public class Client extends Thread {
 
     void clientQuit() throws IOException {
         clientConnections.remove(this);
+        
+        Game game = player.getGame();
         if(game!=null){
-            game.playerQuit(player);
+            game.playerDisconnected(player);
         }
 
         Seek.unregisterListener(this);
-        Game.unregisterGameListListener(this);
+        Game.unregisterGameListListener(player);
         removeSeeks();
         unspectateAll();
-        if(game!=null)
-            Game.removeGame(game);
+//        if(game!=null)
+//            Game.removeGame(game);
 
         if (player != null) {
             player.logout();
@@ -272,10 +272,6 @@ public class Client extends Thread {
     
     void Log(Object obj) {
         TakServer.Log(clientNo+":"+((player!=null)?player.getName():"")+":"+obj);
-    }
-    
-    void removeGame(Game g) {
-        game = null;
     }
     
     void kick() {
@@ -317,7 +313,7 @@ public class Client extends Thread {
                         Log("Player logged in");
                         
                         Seek.registerListener(this);
-                        Game.registerGameListListener(this);
+                        Game.registerGameListListener(player);
                         
                         sendAllOnline("Online "+(++onlineClients));
                     }
@@ -335,13 +331,14 @@ public class Client extends Thread {
                                     send("You're already logged in");
                                 } else {
                                     player = tplayer;
-                                    player.login(this);
 
                                     send("Welcome "+player.getName()+"!");
+                                    
+                                    player.login(this);
                                     Log("Player logged in");
                                     
                                     Seek.registerListener(this);
-                                    Game.registerGameListListener(this);
+                                    Game.registerGameListListener(player);
                                     
                                     sendAllOnline("Online "+(++onlineClients));
                                 }
@@ -374,6 +371,7 @@ public class Client extends Thread {
                     else
                         send("Login or Register");
                 } else {
+                    Game game = player.getGame();
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
                         sendOK();
@@ -401,7 +399,7 @@ public class Client extends Thread {
                     else if (game==null && (m = acceptSeekPattern.matcher(temp)).find()) {
                         Seek sk = Seek.seeks.get(Integer.parseInt(m.group(1)));
 
-                        if (sk != null && game == null && sk.client.game == null && sk!=seek) {
+                        if (sk != null && game == null && sk.client.player.getGame() == null && sk!=seek) {
                             removeSeeks();
 
                             Client otherClient = sk.client;
@@ -414,7 +412,9 @@ public class Client extends Thread {
                             
                             game = new Game(player, otherClient.player, sz, time, sk.color);
                             Game.addGame(game);
-                            otherClient.game = game;
+                            
+                            player.setGame(game);
+                            otherClient.player.setGame(game);
                             
                             sendOK();
                             String msg = "Game Start " + game.no +" "+sz+" "+game.white.getName()+" vs "+game.black.getName();
@@ -433,8 +433,8 @@ public class Client extends Thread {
                             
                             if(game.gameState!=Game.gameS.NONE){
                                 Game.removeGame(game);
-                                game = null;
-                                other.game = null;
+                                player.removeGame();
+                                other.player.removeGame();
                             }
                         } else {
                             sendNOK();
@@ -453,8 +453,8 @@ public class Client extends Thread {
                             Client other = (game.white==player)?game.black.getClient():game.white.getClient();
                             if(game.gameState!=Game.gameS.NONE){
                                 Game.removeGame(game);
-                                game = null;
-                                other.game = null;
+                                player.removeGame();
+                                other.player.removeGame();
                             }
                         } else {
                             sendNOK();
@@ -475,8 +475,8 @@ public class Client extends Thread {
                         Client other = (game.white==player)?game.black.getClient():game.white.getClient();
                         if(game.gameState!=Game.gameS.NONE){
                             Game.removeGame(game);
-                            game = null;
-                            other.game = null;
+                            player.removeGame();
+                            other.player.removeGame();
                         }
                     }
                     //Handle removing draw offer
@@ -489,8 +489,8 @@ public class Client extends Thread {
                         Client other = (game.white==player)?game.black.getClient():game.white.getClient();
                         if(game.gameState!=Game.gameS.NONE){
                             Game.removeGame(game);
-                            game = null;
-                            other.game = null;
+                            player.removeGame();
+                            other.player.removeGame();
                         }
                     }
                     //Show game state
@@ -504,27 +504,27 @@ public class Client extends Thread {
                     }
                     //GameList
                     else if ((m=gameListPattern.matcher(temp)).find()){
-                        Game.sendGameListTo(this);
+                        Game.sendGameListTo(player);
                     }
                     //ObserveGame
                     else if ((m=observePattern.matcher(temp)).find()){
-                        Game game = Game.games.get(Integer.parseInt(m.group(1)));
+                        game = Game.games.get(Integer.parseInt(m.group(1)));
                         if(game!=null){
                             if(spectating.contains(game)) {
                                 send("Message you're already observing this game");
                             } else {
                                 spectating.add(game);
-                                game.newSpectator(this);
+                                game.newSpectator(player);
                             }
                         } else
                             sendNOK();
                     }
                     //UnobserveGame
                     else if ((m=unobservePattern.matcher(temp)).find()){
-                        Game game = Game.games.get(Integer.parseInt(m.group(1)));
+                        game = Game.games.get(Integer.parseInt(m.group(1)));
                         if(game!=null){
                             spectating.remove(game);
-                            game.unSpectate(this);
+                            game.unSpectate(player);
                         } else
                             sendNOK();
                     }

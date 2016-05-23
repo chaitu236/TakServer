@@ -41,21 +41,22 @@ public class Game {
     long lastUpdateTime;
     boolean timerStarted;
     Timer timer;
+    Timer disconnectionTimer;
     
     Player drawOfferedBy;
     Player undoRequestedBy;
     
     boolean abandoned;
     
-    Set<Client> spectators;
+    Set<Player> spectators;
     
     public enum gameS {WHITE_ROAD, BLACK_ROAD, WHITE_TILE, BLACK_TILE, DRAW,
-                        WHITE, BLACK, NONE};
+                        WHITE, BLACK, ABORT, NONE};
     List<String> moveList;
     gameS gameState;
     
     static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
-    static Set<Client> gameListeners = Collections.synchronizedSet(new HashSet<Client>());
+    static Set<Player> gameListeners = Collections.synchronizedSet(new HashSet<Player>());
     
     class Board {
         int boardSize;
@@ -267,7 +268,7 @@ public class Game {
         moveList = Collections.synchronizedList(new ArrayList<String>());
         
         boardHistory.push(board.clone());//store empty position
-        spectators = Collections.synchronizedSet(new HashSet<Client>());
+        spectators = Collections.synchronizedSet(new HashSet<Player>());
     }
     
     public static void setGameNo() {
@@ -289,11 +290,11 @@ public class Game {
         Game.games.remove(g.no);
     }
 
-    void newSpectator(Client c) {
-        c.send("Observe "+shortDesc());
-        sendMoveListTo(c);
-        spectators.add(c);
-        updateTime(c);
+    void newSpectator(Player p) {
+        p.send("Observe "+shortDesc());
+        sendMoveListTo(p);
+        spectators.add(p);
+        updateTime(p);
     }
     
     void resign(Player p) {
@@ -317,19 +318,19 @@ public class Game {
     
     void undo(Player p) {
         if(board.moveCount <= 0) {
-            p.getClient().sendNOK();
+            p.sendNOK();
             return;
         }
         
         if(undoRequestedBy == null) {
             undoRequestedBy = p;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RequestUndo");
+            otherPlayer.sendWithoutLogging("Game#"+no+" RequestUndo");
         } else if(undoRequestedBy != p) {
             undoRequestedBy = null;
             undoPosition();
-            white.getClient().send("Game#"+no+" Undo");
-            black.getClient().send("Game#"+no+" Undo");
+            white.send("Game#"+no+" Undo");
+            black.send("Game#"+no+" Undo");
             sendToSpectators("Game#"+no+" Undo");
             updateTimeTurnChange();
         }
@@ -339,7 +340,7 @@ public class Game {
         if(undoRequestedBy == p) {
             undoRequestedBy = null;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RemoveUndo");
+            otherPlayer.sendWithoutLogging("Game#"+no+" RemoveUndo");
         }
     }
     
@@ -347,7 +348,7 @@ public class Game {
         if(drawOfferedBy == null) {
             drawOfferedBy = p;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" OfferDraw");
+            otherPlayer.sendWithoutLogging("Game#"+no+" OfferDraw");
         } else if(drawOfferedBy!=p) {
             gameState = gameS.DRAW;
             whenGameEnd();
@@ -358,23 +359,23 @@ public class Game {
         if(drawOfferedBy == p) {
             drawOfferedBy = null;
             Player otherPlayer = (p==white)?black:white;
-            otherPlayer.getClient().sendWithoutLogging("Game#"+no+" RemoveDraw");
+            otherPlayer.sendWithoutLogging("Game#"+no+" RemoveDraw");
         }
     }
     
-    void unSpectate(Client c) {
-        spectators.remove(c);
+    void unSpectate(Player p) {
+        spectators.remove(p);
     }
     
-    static void sendGameListTo(Client c) {
+    static void sendGameListTo(Player p) {
         for (Integer no : Game.games.keySet()) {
-            c.sendWithoutLogging("GameList Add "+Game.games.get(no).shortDesc());
+            p.sendWithoutLogging("GameList Add "+Game.games.get(no).shortDesc());
         }
     }
     
-    void sendMoveListTo(Client c) {
+    void sendMoveListTo(Player p) {
         for(String move:moveList)
-            c.sendWithoutLogging("Game#"+no+" "+move);
+            p.sendWithoutLogging("Game#"+no+" "+move);
     }
     
     String shortDesc(){
@@ -386,21 +387,21 @@ public class Game {
         return sb.toString();
     }
     
-    static void registerGameListListener(Client c) {
-        gameListeners.add(c);
-        sendGameListTo(c);
+    static void registerGameListListener(Player p) {
+        gameListeners.add(p);
+        sendGameListTo(p);
     }
     
-    static void unregisterGameListListener(Client c) {
-        gameListeners.remove(c);
+    static void unregisterGameListListener(Player p) {
+        gameListeners.remove(p);
     }
     
     static void updateGameListListeners(final String st) {
         new Thread() {
             @Override
             public void run() {
-                for (Client cc : gameListeners) {
-                    cc.sendWithoutLogging("GameList " + st);
+                for (Player p : gameListeners) {
+                    p.sendWithoutLogging("GameList " + st);
                 }
             }
         }.start();
@@ -446,12 +447,12 @@ public class Game {
     }
     
     void timeCleanup() {
-        white.getClient().removeGame(this);
-        black.getClient().removeGame(this);
+        white.removeGame();
+        black.removeGame();
         Game.removeGame(this);
     }
     
-    void updateTime(Client c) {
+    void updateTime(Player p) {
         if(whiteTime == -1 || board.moveCount == 0)
             return;
         
@@ -468,7 +469,7 @@ public class Game {
         lastUpdateTime = curTime;
 
         String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
-        c.sendWithoutLogging(msg);
+        p.sendWithoutLogging(msg);
     }
     
     void updateTimeTurnChange() {
@@ -511,8 +512,8 @@ public class Game {
             }
         }, timeToCount);
         String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
-        white.getClient().sendWithoutLogging(msg);
-        black.getClient().sendWithoutLogging(msg);
+        white.sendWithoutLogging(msg);
+        black.sendWithoutLogging(msg);
         sendToSpectators(msg);
     }
     
@@ -780,9 +781,9 @@ public class Game {
         }
         
         if(!(abandoned && gameState==gameS.BLACK))
-            white.getClient().send(msg);
+            white.send(msg);
         if(!(abandoned && gameState==gameS.WHITE))
-            black.getClient().send(msg);
+            black.send(msg);
         sendToSpectators(msg);
         
         saveToDB();
@@ -808,6 +809,7 @@ public class Game {
             case BLACK_TILE: return "0-F";
             case WHITE: return "1-0";
             case BLACK: return "0-1";
+            case ABORT: return "0-0";
             default: return "---";
         }
     }
@@ -834,17 +836,17 @@ public class Game {
     
     void sendToOtherPlayer(Player p, String move) {
         if(white==p)
-            black.getClient().sendWithoutLogging(move);
+            black.sendWithoutLogging(move);
         else
-            white.getClient().sendWithoutLogging(move);
+            white.sendWithoutLogging(move);
     }
     
     void sendToSpectators(final String msg) {
         new Thread() {
             @Override
             public void run() {
-                for(Client c:spectators)
-                    c.sendWithoutLogging(msg);
+                for(Player p:spectators)
+                    p.sendWithoutLogging(msg);
             }
         }.start();
     }
@@ -989,12 +991,54 @@ public class Game {
         }
     }
     
+    Player otherPlayer(Player p) {
+        return (p==white)?black:white;
+    }
     void playerQuit(Player p) {
-        Player otherPlayer = (p==white)?black:white;
+        Player otherPlayer = otherPlayer(p);
         abandoned = true;
-        otherPlayer.getClient().game = null;
+        
+        p.removeGame();
+        otherPlayer.removeGame();
+        
         gameState = (p==white)?gameS.BLACK:gameS.WHITE;
         whenGameEnd();
+        Game.removeGame(this);
+    }
+    
+    void playerDisconnected(Player p) {
+        Player otherPlayer = otherPlayer(p);
+        if(!otherPlayer.isLoggedIn()) {
+            //Both players have disconnected - so we abort the game
+            gameState = gameS.ABORT;
+            whenGameEnd();
+            Game.removeGame(this);
+            return;
+        }
+        otherPlayer.send("Message "+p.getName()+" has disconnected. They have 1 minute to reconnect");
+        sendToSpectators("Message "+p.getName()+" has disconnected. They have 1 minute to reconnect");
+        disconnectionTimer = new Timer();
+        disconnectionTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                playerQuit(white.isLoggedIn()?black:white);
+            }}, 60*1000);
+    }
+    
+    void playerRejoin(Player p) {
+        disconnectionTimer.cancel();
+        
+        Player otherPlayer = otherPlayer(p);
+        
+        String msg = "Game Start " + no +" "+board.boardSize+" "+white.getName()+" vs "+black.getName();
+        p.send(msg+" "+((white==p)?"white":"black")+" "+originalTime);
+        
+        sendMoveListTo(p);
+        updateTime(p);
+        p.send("Message Your game is resumed");
+        
+        otherPlayer.send("Message "+p.getName()+" has reconnected.");
+        sendToSpectators("Message "+p.getName()+" has reconnected.");
     }
     
     class SquareIterator {

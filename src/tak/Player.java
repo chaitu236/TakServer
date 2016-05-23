@@ -44,6 +44,7 @@ public class Player {
     private boolean gag = false;//don't broadcast his shouts
     //variables not in database
     private Client client;
+    private Game game;
     
     Player(String name, String email, String password, int id, int r4, int r5,
                         int r6, int r7, int r8, boolean guest) {
@@ -59,14 +60,44 @@ public class Player {
         this.guest = guest;
         
         client = null;
+        game = null;
     }
     
     public boolean isLoggedIn() {
         return client!=null;
     }
     
+    public Game getGame() {
+        return game;
+    }
+    
+    public void setGame(Game g) {
+        game = g;
+    }
+    
+    public void removeGame() {
+        game = null;
+    }
+    
+    public void send(String msg) {
+        if(client != null)
+            client.send(msg);
+    }
+    
+    public void sendNOK() {
+        if(client != null)
+            client.sendNOK();
+    }
+    
+    public void sendWithoutLogging(String msg) {
+        if(client != null)
+            client.sendWithoutLogging(msg);
+    }
+    
     public void login(Client client) {
         this.client = client;
+        if(game != null)
+            game.playerRejoin(this);
     }
     
     public boolean isMod() {
