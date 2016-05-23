@@ -56,6 +56,7 @@ public class Settings {
         Node node = nList.item(0);
         Element element = (Element)node;
         
+        IRCBridge.enabled = "true".equals(element.getElementsByTagName("enabled").item(0).getTextContent());
         IRCBridge.server = element.getElementsByTagName("server").item(0).getTextContent();
         IRCBridge.nick = element.getElementsByTagName("nick").item(0).getTextContent();
         IRCBridge.login = element.getElementsByTagName("login").item(0).getTextContent();

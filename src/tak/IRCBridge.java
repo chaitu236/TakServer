@@ -25,6 +25,7 @@ public class IRCBridge {
     public static BufferedReader reader = null;
     public static PrintWriter writer = null;
 
+    public static boolean enabled;
     public static String server;
     public static String nick;
     public static String login;
@@ -39,6 +40,8 @@ public class IRCBridge {
         thread = new Thread() {
             @Override
             public void run() {
+                if(!enabled)
+                    return;
                 try {
                     // Connect directly to the IRC server.
                     Socket socket = new Socket(server, 6667);
