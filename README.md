@@ -17,7 +17,7 @@ The client to server commands and their format is as below
 |Register **username email** |Register with the given username and email|
 |Login **username password** |Login with the username and password|
 |Login Guest |Login as a guest|
-|Seek **no** **time** **W\|B** |Seeks a game of board size **no** with time per player **time** specified in seconds and an optional choice of color **W** for white, **B** for black|
+|Seek **no** **time** **incr** **W\|B** |Seeks a game of board size **no** with time per player **time** specified in seconds, increment per move **incr** specified in seconds and an optional choice of color **W** for white, **B** for black|
 |Accept **no** |Accepts the seek with the number **no**|
 |Game#**no** P **Sq** C\|W |Sends a 'Place' move to the specified game no. The optional suffix 'C' or 'W' denote if it is a capstone or a wall (standing stone)|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|Sends a 'Move' move to the specified game no. **Sq1** is beginning square, **Sq2** is ending square, **no1**, **no2**, **no3**.. are the no. of pieces dropped in the in-between squares (including the last square)|
@@ -46,8 +46,8 @@ The list does not include error messages, you're free to poke around and figure 
 |Welcome! |Just a welcome message when connected to server|
 |Login or Register |Login with username/password or login as guest or register after this message|
 |Welcome **name**! |A welcome message indicating that you've logged in as **name**|
-|GameList Add Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move |Notifies client that a game has started (which the client can observe if it wants)|
-|GameList Remove Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move |Notifies client that the game has ended|
+|GameList Add Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **incr**, **moves** half-moves played, **player_name** to move |Notifies client that a game has started (which the client can observe if it wants)|
+|GameList Remove Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **incr**, **moves** half-moves played, **player_name** to move |Notifies client that the game has ended|
 |Game Start **no** **size** **player_white** vs **player_black** **your color** |Notifies client to start a game. The game no. being **no**, players' names being **white_player**, **black_player** and **your_color** being your color which could be either "white" or "black"|
 |Game#**no** P **Sq** C\|W|The 'Place' move played by the other player in game number **no**. The format is same as the command from client to server|
 |Game#**no** M **Sq1** **Sq2** **no1** **no2**...|The 'Move' move played by the other player in game number **no**. The format is same as the command from client to server|

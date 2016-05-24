@@ -36,6 +36,7 @@ public class Game {
     
     //time in milli seconds
     long originalTime;
+    long incrementTime;
     long whiteTime;
     long blackTime;
     long lastUpdateTime;
@@ -239,7 +240,7 @@ public class Game {
      * @param t: time in seconds
      * @param clr: color choice of p2
      */
-    Game(Player p1, Player p2, int b, int t, Seek.COLOR clr) {
+    Game(Player p1, Player p2, int b, int t, int i, Seek.COLOR clr) {
         int rand = new Random().nextInt(99);
         
         if(clr == Seek.COLOR.ANY) {
@@ -251,6 +252,7 @@ public class Game {
         }
         
         originalTime = whiteTime = blackTime = t*1000;
+        incrementTime = i*1000;
         
         timer = new Timer();
         timerStarted = false;
@@ -385,6 +387,7 @@ public class Game {
         sb.append(white.getName()).append(" vs ").append(black.getName());
         sb.append(", ").append(board.boardSize).append("x").append(board.boardSize).append(", ");
         sb.append(originalTime/1000).append(", ");
+        sb.append(incrementTime/1000).append(", ");
         sb.append(board.moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
         return sb.toString();
     }
@@ -489,9 +492,11 @@ public class Game {
         
         if(isWhitesTurn()) {
             blackTime -= elapsedMS;
+            blackTime += incrementTime;
             timeToCount = whiteTime;
         } else {
             whiteTime -= elapsedMS;
+            whiteTime += incrementTime;
             timeToCount = blackTime;
         }
         

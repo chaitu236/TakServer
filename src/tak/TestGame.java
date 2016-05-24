@@ -27,7 +27,7 @@ public class TestGame {
     
     Game game;
     TestGame(int boardSize) {
-        game = new Game(null, null, boardSize, 180, Seek.COLOR.ANY);
+        game = new Game(null, null, boardSize, 180, 0, Seek.COLOR.ANY);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
     }

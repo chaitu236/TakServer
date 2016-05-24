@@ -77,7 +77,7 @@ public class Client extends Thread {
     String resignString = "^Game#(\\d+) Resign";
     Pattern resignPattern;
 
-    String seekString = "^Seek (\\d) (\\d+)( W)?( B)?";
+    String seekString = "^Seek (\\d) (\\d+) (\\d+)( W)?( B)?";
     Pattern seekPattern;
 
     String acceptSeekString = "^Accept (\\d+)";
@@ -400,11 +400,13 @@ public class Client extends Thread {
                             seek = null;
                         } else {
                             Seek.COLOR clr = Seek.COLOR.ANY;
-                            if(m.group(3)!=null)
+                            
+                            if(m.group(4)!=null)
                                 clr = Seek.COLOR.WHITE;
-                            else if(m.group(4)!=null)
+                            else if(m.group(5)!=null)
                                 clr = Seek.COLOR.BLACK;
-                            seek = Seek.newSeek(this, Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), clr);
+                            seek = Seek.newSeek(this, Integer.parseInt(m.group(1)),
+                                    Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)), clr);
                             Log("Seek "+seek.boardSize);
                         }
                         sendOK();
@@ -423,7 +425,7 @@ public class Client extends Thread {
                             unspectateAll();
                             otherClient.unspectateAll();
                             
-                            game = new Game(player, otherClient.player, sz, time, sk.color);
+                            game = new Game(player, otherClient.player, sz, time, sk.incr, sk.color);
                             Game.addGame(game);
                             
                             player.setGame(game);
