@@ -257,6 +257,8 @@ public class Game {
         timer = new Timer();
         timerStarted = false;
         
+        disconnectionTimer = null;
+        
         time = System.currentTimeMillis();
 
         abandoned = false;
@@ -774,7 +776,9 @@ public class Game {
         String msg="";
         msg += gameStateString();
         timer.cancel();
-        disconnectionTimer.cancel();
+        
+        if(disconnectionTimer != null)
+            disconnectionTimer.cancel();
         
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;
@@ -1037,6 +1041,7 @@ public class Game {
     
     void playerRejoin(Player p) {
         disconnectionTimer.cancel();
+        disconnectionTimer = null;//Could cause race. TODO: Fix
         
         Player otherPlayer = otherPlayer(p);
         
