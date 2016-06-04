@@ -774,6 +774,7 @@ public class Game {
         String msg="";
         msg += gameStateString();
         timer.cancel();
+        disconnectionTimer.cancel();
         
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;
