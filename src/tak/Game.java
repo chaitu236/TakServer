@@ -1026,6 +1026,8 @@ public class Game {
             gameState = gameS.ABORT;
             whenGameEnd();
             Game.removeGame(this);
+            p.removeGame();
+            otherPlayer.removeGame();
             return;
         }
         otherPlayer.send("Message "+p.getName()+" has disconnected. They have "+
