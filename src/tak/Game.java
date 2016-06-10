@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -226,7 +227,7 @@ public class Game {
 
     static int DEFAULT_SIZE = 5;
 
-    static int gameNo = 0;
+    static AtomicInteger gameNo = new AtomicInteger(0);
     
     static final char FLAT='f';
     static final char WALL='w';
@@ -266,7 +267,7 @@ public class Game {
         board = new Board(b);
         boardHistory = new Stack<>();
         
-        no = ++gameNo;
+        no = gameNo.incrementAndGet();
         gameState = gameS.NONE;
         drawOfferedBy = null;
         undoRequestedBy = null;
@@ -280,7 +281,7 @@ public class Game {
     public static void setGameNo() {
         try (Statement stmt = Database.gamesConnection.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM games;")) {
-            gameNo = rs.getInt(1);
+            gameNo.set(rs.getInt(1));
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }

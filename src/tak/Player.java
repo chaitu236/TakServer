@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +26,7 @@ public class Player {
     public static HashSet<Player> gagList = new HashSet<>();
     
     static int idCount=0;
-    static int guestCount=0;
+    static AtomicInteger guestCount = new AtomicInteger(0);
     
     private String name;
     private String password;
@@ -148,7 +149,7 @@ public class Player {
     }
     
     Player() {
-        this("Guest"+(++guestCount), "", "", true);
+        this("Guest"+guestCount.incrementAndGet(), "", "", true);
         Player.players.put(this.name, this);
     }
     

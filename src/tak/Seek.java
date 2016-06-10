@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import static tak.Game.DEFAULT_SIZE;
 
 /**
@@ -25,7 +26,7 @@ public class Seek {
     enum COLOR {WHITE, BLACK, ANY};
     COLOR color;
     
-    static int seekNo=0;
+    static AtomicInteger seekNo = new AtomicInteger(0);
     
     static Map<Integer, Seek> seeks = Collections.synchronizedMap(new HashMap<Integer, Seek>());
     static Set<Client> seekListeners = Collections.synchronizedSet(new HashSet<Client>());
@@ -38,7 +39,7 @@ public class Seek {
     
     Seek(Client c, int b, int t, int i, COLOR clr) {
         client = c;
-        no = ++seekNo;
+        no = seekNo.incrementAndGet();
         time = t;
         incr = i;
         color = clr;

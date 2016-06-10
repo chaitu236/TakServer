@@ -11,6 +11,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -33,8 +34,8 @@ public class Client extends Thread {
     Player player = null;
     int clientNo;
     
-    static int totalClients=0;
-    static int onlineClients=0;
+    static AtomicInteger totalClients = new AtomicInteger(0);
+    static AtomicInteger onlineClients = new AtomicInteger(0);
 
     static Set<Client> clientConnections = new HashSet<>();
 
@@ -144,7 +145,7 @@ public class Client extends Thread {
         } catch (SocketException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
-        this.clientNo = totalClients++;
+        this.clientNo = totalClients.incrementAndGet();
 
         loginPattern = Pattern.compile(loginString);
         registerPattern = Pattern.compile(registerString);
@@ -263,7 +264,7 @@ public class Client extends Thread {
     //            Game.removeGame(game);
 
             player.loggedOut();
-            sendAllOnline("Online "+(--onlineClients));
+            sendAllOnline("Online "+onlineClients.decrementAndGet());
         }
 
         socket.close();
@@ -316,7 +317,7 @@ public class Client extends Thread {
                         Seek.registerListener(this);
                         Game.registerGameListListener(player);
                         
-                        sendAllOnline("Online "+(++onlineClients));
+                        sendAllOnline("Online "+onlineClients.incrementAndGet());
                     }
                     //Login
                     else if ((m = loginPattern.matcher(temp)).find()) {
@@ -353,7 +354,7 @@ public class Client extends Thread {
                                     Seek.registerListener(this);
                                     Game.registerGameListListener(player);
                                     
-                                    sendAllOnline("Online "+(++onlineClients));
+                                    sendAllOnline("Online "+onlineClients.incrementAndGet());
                                 }
                             } else
                                 send("Authentication failure");
