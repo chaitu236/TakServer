@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.mindrot.jbcrypt.BCrypt;
 
 /**
  *
@@ -51,7 +52,7 @@ public class Player {
                         int r6, int r7, int r8, boolean guest) {
         this.name = name;
         this.email = email;
-        this.password = password;
+        this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         this.id = id;
         this.r4 = r4;
         this.r5 = r5;
@@ -62,6 +63,10 @@ public class Player {
         
         client = null;
         game = null;
+    }
+    
+    public boolean authenticate(String candidate) {
+        return BCrypt.checkpw(candidate, password);
     }
     
     public boolean isLoggedIn() {
@@ -159,7 +164,8 @@ public class Player {
     
     static SecureRandom random = new SecureRandom();
     public static Player createPlayer(String name, String email) {
-        Player np = new Player(name, email, new BigInteger(130, random).toString(32), false);
+        String tmpPass = new BigInteger(130, random).toString(32);
+        Player np = new Player(name, email, tmpPass, false);
         try {
             Statement stmt = Database.playersConnection.createStatement();
             String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
@@ -169,7 +175,7 @@ public class Player {
             stmt.executeUpdate(sql);
             stmt.close();
             
-            EMail.send(np.email, "playtak.com password", "Your password is "+np.password);
+            EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
             players.put(np.name, np);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -243,7 +249,7 @@ public class Player {
     }
     
     public void setPassword(String pass) {
-        this.password = pass;
+        this.password = BCrypt.hashpw(pass, BCrypt.gensalt());
         
         Statement stmt;
         try {

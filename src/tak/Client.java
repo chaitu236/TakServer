@@ -42,7 +42,7 @@ public class Client extends Thread {
     Seek seek = null;
     ArrayList<Game> spectating;
 
-    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([a-zA-Z0-9_]{3,50})";
+    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,30})";
     Pattern loginPattern;
     
     String loginGuestString = "^Login Guest";
@@ -56,6 +56,9 @@ public class Client extends Thread {
     
     String clientString = "^Client ([A-Za-z-.0-9]{4,15})";
     Pattern clientPattern;
+    
+    String changePasswordString = "^ChangePassword ([^\n\r\\s]{6,30}) ([^\n\r\\s]{6,30})";
+    Pattern changePasswordPattern;
     
     String placeString = "^Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
     Pattern placePattern;
@@ -150,6 +153,7 @@ public class Client extends Thread {
         loginPattern = Pattern.compile(loginString);
         registerPattern = Pattern.compile(registerString);
         clientPattern = Pattern.compile(clientString);
+        changePasswordPattern = Pattern.compile(changePasswordString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
         undoPattern = Pattern.compile(undoString);
@@ -327,7 +331,7 @@ public class Client extends Thread {
                                 Player tplayer = Player.players.get(tname);
                                 String pass = m.group(2).trim();
 
-                                if(!pass.equals(tplayer.getPassword())) {
+                                if(!tplayer.authenticate(pass)) {
                                     send("Authentication failure");
 //                                } else if(tplayer.isLoggedIn()) {
 //                                    send("You're already logged in");
@@ -553,6 +557,18 @@ public class Client extends Thread {
                             IRCBridge.send(msg);
                         } else//send to only gagged player
                             sendWithoutLogging("Shout "+msg);
+                    }
+                    //ChangePassword old new
+                    else if ((m=changePasswordPattern.matcher(temp)).find()) {
+                        String curPass = m.group(1);
+                        String newPass = m.group(2);
+                        
+                        if(player.authenticate(curPass)) {
+                            player.setPassword(newPass);
+                            send("Password changed");
+                        } else {
+                            send("Wrong password");
+                        }
                     }
                     //sudo
                     else if ((m=sudoPattern.matcher(temp)).find()){
