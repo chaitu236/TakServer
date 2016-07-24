@@ -54,7 +54,7 @@ public class Player {
                         int r6, int r7, int r8, boolean guest) {
         this.name = name;
         this.email = email;
-        this.password = BCrypt.hashpw(password, BCrypt.gensalt());
+        this.password = password;
         this.id = id;
         this.r4 = r4;
         this.r5 = r5;
@@ -66,6 +66,10 @@ public class Player {
         
         client = null;
         game = null;
+    }
+    
+    public static String hash(String st) {
+        return BCrypt.hashpw(st, BCrypt.gensalt());
     }
     
     public boolean authenticate(String candidate) {
@@ -184,7 +188,8 @@ public class Player {
     static SecureRandom random = new SecureRandom();
     public static Player createPlayer(String name, String email) {
         String tmpPass = new BigInteger(130, random).toString(32);
-        Player np = new Player(name, email, tmpPass, false);
+        
+        Player np = new Player(name, email, Player.hash(tmpPass), false);
         try {
             Statement stmt = Database.playersConnection.createStatement();
             String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
@@ -268,7 +273,7 @@ public class Player {
     }
     
     public void setPassword(String pass) {
-        this.password = BCrypt.hashpw(pass, BCrypt.gensalt());
+        this.password = Player.hash(pass);
         
         Statement stmt;
         try {
