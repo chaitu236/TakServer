@@ -48,6 +48,8 @@ public class Player {
     private Client client;
     private Game game;
     
+    private String resetToken;
+    
     Player(String name, String email, String password, int id, int r4, int r5,
                         int r6, int r7, int r8, boolean guest) {
         this.name = name;
@@ -60,6 +62,7 @@ public class Player {
         this.r7 = r7;
         this.r8 = r8;
         this.guest = guest;
+        this.resetToken = "";
         
         client = null;
         game = null;
@@ -67,6 +70,20 @@ public class Player {
     
     public boolean authenticate(String candidate) {
         return BCrypt.checkpw(candidate, password);
+    }
+    
+    public void sendResetToken() {
+        resetToken = new BigInteger(130, random).toString(32);
+        EMail.send(this.email, "playtak.com reset password", "Your reset token is " + resetToken);
+    }
+    
+    public boolean resetPassword(String token, String newPass) {
+        if((!"".equals(resetToken)) && token.equals(resetToken)) {
+            setPassword(newPass);
+            resetToken = "";
+            return true;
+        }
+        return false;
     }
     
     public boolean isLoggedIn() {
@@ -102,6 +119,8 @@ public class Player {
     
     public void login(Client c) {
         this.client = c;
+        resetToken = "";//If a user is able to login, he has the password
+        
         if(game != null)
             game.playerRejoin(this);
     }

@@ -42,7 +42,7 @@ public class Client extends Thread {
     Seek seek = null;
     ArrayList<Game> spectating;
 
-    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,30})";
+    String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,50})";
     Pattern loginPattern;
     
     String loginGuestString = "^Login Guest";
@@ -57,8 +57,14 @@ public class Client extends Thread {
     String clientString = "^Client ([A-Za-z-.0-9]{4,15})";
     Pattern clientPattern;
     
-    String changePasswordString = "^ChangePassword ([^\n\r\\s]{6,30}) ([^\n\r\\s]{6,30})";
+    String changePasswordString = "^ChangePassword ([^\n\r\\s]{6,50}) ([^\n\r\\s]{6,50})";
     Pattern changePasswordPattern;
+    
+    String sendResetTokenString = "SendResetToken ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([A-Za-z.0-9_+!#$%&'*^?=-]{1,30}@[A-Za-z.0-9-]{3,30})";
+    Pattern sendResetTokenPattern;
+    
+    String resetPasswordString = "ResetPassword ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,50}) ([^\n\r\\s]{6,50})";
+    Pattern resetPasswordPattern;
     
     String placeString = "^Game#(\\d+) P ([A-Z])(\\d)( C)?( W)?";
     Pattern placePattern;
@@ -154,6 +160,8 @@ public class Client extends Thread {
         registerPattern = Pattern.compile(registerString);
         clientPattern = Pattern.compile(clientString);
         changePasswordPattern = Pattern.compile(changePasswordString);
+        sendResetTokenPattern = Pattern.compile(sendResetTokenString);
+        resetPasswordPattern = Pattern.compile(resetPasswordString);
         placePattern = Pattern.compile(placeString);
         movePattern = Pattern.compile(moveString);
         undoPattern = Pattern.compile(undoString);
@@ -385,6 +393,38 @@ public class Client extends Thread {
                     //Wrong registration chars
                     else if ((wrongRegisterPattern.matcher(temp)).find()) {
                         send("Unknown format for username/email. Only [a-z][A-Z][0-9][_] allowed for username, it should be 4-16 characters and should start with letter");
+                    }
+                    //SendResetToken
+                    else if ((m = sendResetTokenPattern.matcher(temp)).find()) {
+                        String tname = m.group(1).trim();
+                        String email = m.group(2).trim();
+                        if(Player.players.containsKey(tname)) {
+                            Player tplayer = Player.players.get(tname);
+                            if(email.equals(tplayer.getEmail())) {
+                                tplayer.sendResetToken();
+                                send("Reset token sent");
+                            } else {
+                                send("Email address does not match");
+                            }
+                        } else {
+                            send("No such player");
+                        }
+                    }
+                    //ResetPassword
+                    else if ((m = resetPasswordPattern.matcher(temp)).find()) {
+                        String tname = m.group(1);
+                        String token = m.group(2);
+                        String pass = m.group(3);
+                        if(Player.players.containsKey(tname)) {
+                            Player tplayer = Player.players.get(tname);
+                            if(tplayer.resetPassword(token, pass)) {
+                                send("Password is changed");
+                            } else {
+                                send("Wrong token");
+                            }
+                        } else {
+                            send("No such player");
+                        }
                     }
                     else
                         send("Login or Register");
