@@ -132,9 +132,9 @@ public class Client extends Thread {
     
     String listCmdString = "sudo list ([a-zA-Z]{3,15})";
     Pattern listCmdPattern;
-        
+    
     //set param user value
-    String setString = "sudo set ([a-zA-Z]{3,15}) ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([a-zA-Z0-9]{1,15})";
+    String setString = "sudo set ([a-zA-Z]{3,15}) ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,100})";
     Pattern setPattern;
     
     String modString = "sudo mod ([a-zA-Z][a-zA-Z0-9_]{3,15})";
@@ -787,6 +787,7 @@ public class Client extends Thread {
                 }
                 if(param.equals("password")) {
                     p.setPassword(value);
+                    sendCmdReply("Password set");
                 }
             }
             else if((m=broadcastPattern.matcher(msg)).find()) {
