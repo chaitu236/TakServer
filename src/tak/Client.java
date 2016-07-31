@@ -309,7 +309,6 @@ public class Client extends Thread {
                     sendWithoutLogging("OK");
                     continue;
                 }
-                Log("Read:"+temp);
                 
                 Matcher m;
 
@@ -429,6 +428,8 @@ public class Client extends Thread {
                     else
                         send("Login or Register");
                 } else {
+                    Log("Read:"+temp);
+                    
                     Game game = player.getGame();
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
