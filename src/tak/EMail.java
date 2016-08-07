@@ -26,6 +26,7 @@ public class EMail {
     public static String host;
     public static String user;
     public static String password;
+    public static String from;
     
     public static void send(String to, String sub, String msg) {
         Properties prop = System.getProperties();
@@ -35,12 +36,11 @@ public class EMail {
         
         MimeMessage message = new MimeMessage(session);
         try {
-            message.setFrom(new InternetAddress(user));
+            message.setFrom(new InternetAddress(from));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
             message.setSubject(sub);
             message.setText(msg);
             
-            //Transport.send(message);
             SMTPTransport t = (SMTPTransport)session.getTransport("smtps");
             t.connect(host, user, password);
             t.sendMessage(message, message.getAllRecipients());

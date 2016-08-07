@@ -48,8 +48,9 @@ public class Settings {
         EMail.host = element.getElementsByTagName("host").item(0).getTextContent();
         EMail.user = element.getElementsByTagName("user").item(0).getTextContent();
         EMail.password = element.getElementsByTagName("password").item(0).getTextContent();
+        EMail.from = element.getElementsByTagName("from").item(0).getTextContent();
         
-        System.out.println("user "+EMail.user+" host "+EMail.host);
+        System.out.println("from "+EMail.from+" host "+EMail.host);
     }
     
     private static void parseIRC() {
