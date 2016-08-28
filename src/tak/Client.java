@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class Client extends Thread {
 
     Seek seek = null;
     ArrayList<Game> spectating;
+    Set<ChatRoom> chatRooms;
 
     String loginString = "^Login ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r\\s]{6,50})";
     Pattern loginPattern;
@@ -114,6 +116,21 @@ public class Client extends Thread {
     String shoutString = "^Shout ([^\n\r]{1,256})";
     Pattern shoutPattern;
     
+    String shoutRoomString = "ShoutRoom ([^\n\r\\s]{4,15}) ([^\n\r]{1,256})";
+    Pattern shoutRoomPattern;
+    
+    String createRoomString = "CreateRoom ([^\n\r\\s]{4,15})";
+    Pattern createRoomPattern;
+    
+    String joinRoomString = "JoinRoom ([^\n\r\\s]{4,15})";
+    Pattern joinRoomPattern;
+    
+    String leaveRoomString = "LeaveRoom ([^\n\r\\s]{4,15})";
+    Pattern leaveRoomPattern;
+    
+    String tellString = "Tell ([a-zA-Z][a-zA-Z0-9_]{3,15}) ([^\n\r]{1,256})";
+    Pattern tellPattern;
+    
     String pingString = "^PING$";
     Pattern pingPattern;
     
@@ -179,6 +196,11 @@ public class Client extends Thread {
         unobservePattern = Pattern.compile(unobserveString);
         getSqStatePattern = Pattern.compile(getSqStateString);
         shoutPattern = Pattern.compile(shoutString);
+        shoutRoomPattern = Pattern.compile(shoutRoomString);
+        createRoomPattern = Pattern.compile(createRoomString);
+        joinRoomPattern = Pattern.compile(joinRoomString);
+        leaveRoomPattern = Pattern.compile(leaveRoomString);
+        tellPattern = Pattern.compile(tellString);
         pingPattern = Pattern.compile(pingString);
         loginGuestPattern = Pattern.compile(loginGuestString);
         
@@ -200,6 +222,7 @@ public class Client extends Thread {
         }
         clientConnections.add(this);
         spectating = new ArrayList<>();
+        chatRooms = new HashSet<>();
         Log("Connected "+socket.getInetAddress());
     }
 
@@ -271,6 +294,7 @@ public class Client extends Thread {
             Seek.unregisterListener(this);
             Game.unregisterGameListListener(player);
             removeSeeks();
+            removeFromAllRooms();
             unspectateAll();
     //        if(game!=null)
     //            Game.removeGame(game);
@@ -576,6 +600,12 @@ public class Client extends Thread {
                             } else {
                                 spectating.add(game);
                                 game.newSpectator(player);
+                                
+                                ChatRoom room = ChatRoom.get("Game"+game.no);
+                                if(room == null) {
+                                    room = ChatRoom.addRoom("Game"+game.no);
+                                }
+                                addToRoom(room);
                             }
                         } else
                             sendNOK();
@@ -586,6 +616,10 @@ public class Client extends Thread {
                         if(game!=null){
                             spectating.remove(game);
                             game.unSpectate(player);
+                            
+                            ChatRoom room = ChatRoom.get("Game"+game.no);
+                            if(room != null)
+                                removeFromRoom(room);
                         } else
                             sendNOK();
                     }
@@ -598,6 +632,55 @@ public class Client extends Thread {
                             IRCBridge.send(msg);
                         } else//send to only gagged player
                             sendWithoutLogging("Shout "+msg);
+                    }
+                    //CreateRoom
+                    else if((m=createRoomPattern.matcher(temp)).find()) {
+                        ChatRoom room = ChatRoom.addRoom(m.group(1));
+                        if(room == null) {
+                            send("Room already exists");
+                        } else
+                            addToRoom(room);
+                    }
+                    //JoinRoom
+                    else if((m=joinRoomPattern.matcher(temp)).find()) {
+                        ChatRoom room = ChatRoom.get(m.group(1));
+                        if(room == null) {
+                            send("No such room");
+                        } else {
+                            addToRoom(room);
+                        }
+                    }
+                    //LeaveRoom
+                    else if((m=leaveRoomPattern.matcher(temp)).find()) {
+                        ChatRoom room = ChatRoom.get(m.group(1));
+                        if(room == null) {
+                            send("No such room");
+                        } else {
+                            removeFromRoom(room);
+                        }
+                    }
+                    //ShoutRoom
+                    else if ((m=shoutRoomPattern.matcher(temp)).find()) {
+                        ChatRoom room = ChatRoom.get(m.group(1));
+                        if(room != null) {
+                            if(chatRooms.contains(room)) 
+                                room.shout(this, m.group(2));
+                            else {
+                                send("You should be in room to shout");
+                            }
+                        } else {
+                            send("No such room");
+                        }
+                    }
+                    //Tell
+                    else if ((m=tellPattern.matcher(temp)).find()) {
+                        if(Player.players.containsKey(m.group(1))) {
+                            Player tplayer = Player.players.get(m.group(1));
+                            tplayer.send("Tell "+"<"+player.getName()+"> "+
+                                                m.group(2));
+                        } else {
+                            send("No such player");
+                        }
                     }
                     //ChangePassword old new
                     else if ((m=changePasswordPattern.matcher(temp)).find()) {
@@ -621,6 +704,8 @@ public class Client extends Thread {
                     }
                 }
             }
+        } catch (SocketTimeoutException ex) {
+            Log("Socket timeout");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             //Log("Stream closed");
@@ -631,6 +716,22 @@ public class Client extends Thread {
                 Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    public void addToRoom(ChatRoom room) {
+        chatRooms.add(room);
+        room.addMember(this);
+    }
+    
+    public void removeFromRoom(ChatRoom room) {
+        chatRooms.remove(room);
+        room.removeMember(this);
+    }
+    
+    public void removeFromAllRooms() {
+        for(ChatRoom room: chatRooms)
+            removeFromRoom(room);
+        chatRooms.clear();
     }
     
     //this has more rights than p
