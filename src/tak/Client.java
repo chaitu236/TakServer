@@ -638,8 +638,10 @@ public class Client extends Thread {
                         ChatRoom room = ChatRoom.addRoom(m.group(1));
                         if(room == null) {
                             send("Room already exists");
-                        } else
+                        } else {
+                            send("Created room "+room.getName());
                             addToRoom(room);
+                        }
                     }
                     //JoinRoom
                     else if((m=joinRoomPattern.matcher(temp)).find()) {
@@ -656,6 +658,7 @@ public class Client extends Thread {
                         if(room == null) {
                             send("No such room");
                         } else {
+                            send("Left room "+room.getName());
                             removeFromRoom(room);
                         }
                     }
@@ -677,6 +680,8 @@ public class Client extends Thread {
                         if(Player.players.containsKey(m.group(1))) {
                             Player tplayer = Player.players.get(m.group(1));
                             tplayer.send("Tell "+"<"+player.getName()+"> "+
+                                                m.group(2));
+                            send("Told "+"<"+tplayer.getName()+"> "+
                                                 m.group(2));
                         } else {
                             send("No such player");
@@ -721,11 +726,13 @@ public class Client extends Thread {
     public void addToRoom(ChatRoom room) {
         chatRooms.add(room);
         room.addMember(this);
+        send("Joined room "+room.getName());
     }
     
     public void removeFromRoom(ChatRoom room) {
         chatRooms.remove(room);
         room.removeMember(this);
+        send("Left room "+room.getName());
     }
     
     public void removeFromAllRooms() {

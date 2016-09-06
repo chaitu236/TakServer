@@ -48,6 +48,10 @@ public class ChatRoom {
         return chatRooms.get(roomName);
     }
     
+    public String getName() {
+        return name;
+    }
+    
     public void shout(Client client, String msg) {        
         if(!contains(client)) {
             client.sendNOK();
