@@ -4,3 +4,4 @@
 properties.xml
 *.DS_Store
 /store/
+.project
