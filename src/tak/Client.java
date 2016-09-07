@@ -11,6 +11,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -616,10 +617,6 @@ public class Client extends Thread {
                         if(game!=null){
                             spectating.remove(game);
                             game.unSpectate(player);
-                            
-                            ChatRoom room = ChatRoom.get("Game"+game.no);
-                            if(room != null)
-                                removeFromRoom(room);
                         } else
                             sendNOK();
                     }
@@ -724,6 +721,9 @@ public class Client extends Thread {
     }
     
     public void addToRoom(ChatRoom room) {
+        if(chatRooms.contains(room))
+            return;
+        
         chatRooms.add(room);
         room.addMember(this);
         send("Joined room "+room.getName());
@@ -732,13 +732,14 @@ public class Client extends Thread {
     public void removeFromRoom(ChatRoom room) {
         chatRooms.remove(room);
         room.removeMember(this);
-        send("Left room "+room.getName());
     }
     
     public void removeFromAllRooms() {
-        for(ChatRoom room: chatRooms)
+        for(Iterator<ChatRoom> it = chatRooms.iterator();it.hasNext();) {
+            ChatRoom room = it.next();
+            it.remove();
             removeFromRoom(room);
-        chatRooms.clear();
+        }
     }
     
     //this has more rights than p
