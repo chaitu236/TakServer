@@ -18,7 +18,7 @@ public class ChatRoom {
     static final ConcurrentHashMap<String, ChatRoom> chatRooms = new ConcurrentHashMap<>();
     
     private final String name;
-    static Set<Client> members;
+    private Set<Client> members;
     
     ChatRoom(String name) {
         this.name = name;

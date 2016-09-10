@@ -663,7 +663,7 @@ public class Client extends Thread {
                     else if ((m=shoutRoomPattern.matcher(temp)).find()) {
                         ChatRoom room = ChatRoom.get(m.group(1));
                         if(room != null) {
-                            if(chatRooms.contains(room)) 
+                            if(chatRooms.contains(room))
                                 room.shout(this, m.group(2));
                             else {
                                 send("You should be in room to shout");
@@ -708,6 +708,8 @@ public class Client extends Thread {
             }
         } catch (SocketTimeoutException ex) {
             Log("Socket timeout");
+        } catch (SocketException ex) {
+            Log("Socket exception");
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             //Log("Stream closed");
