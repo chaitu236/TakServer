@@ -32,7 +32,11 @@ The client to server commands and their format is as below
 |Observe **no** |Observe the specified game. Server sends the game moves and clock info|
 |Unobserve **no** |Unobserve the specified game|
 |Game#**no** Show **Sq** |Prints the position in the specified square (this is used mainly to convert server notation to PTN notation)|
-|Shout **text** |Send text to all logged in players|
+|Shout **text** |Send message **text** to all logged in players|
+|JoinRoom **room** |Join the room **room**|
+|ShoutRoom **room** **text** |Send test to players in room **room**|
+|LeaveRoom **room** |Leave the room **room**|
+|Tell **player** **text** |Send private message **text** to **player**|
 |PING |Pings to inform server that the client is alive. Recommended ping spacing is 30 seconds. Server may disconnect clients if pings are not received|
 |quit |Sent by client to indicate it is going to quit. Server removes all seeks, abandons (which loses) game if any|
 
@@ -62,7 +66,12 @@ The list does not include error messages, you're free to poke around and figure 
 |Seek new **no** **name** **boardsize** **time** **W\B** |There is a new seek with seek no. **no** posted by **name** with board size **boardsize** with **time** seconds for each player and an optional color choice for seek poster|
 |Seek remove **no** **name** **boardsize** **time** **W\B** |Existing seek no. **no** is removed (either the client has joined another game or has changed his seek or has quit)|
 |Observe Game#**no** **player_white** vs **player_black**, **size**x**size**, **original_time**, **moves** half-moves played, **player_name** to move| Start observing the game number **no** of board size **size** with original time setting of **origin_time** seconds where **moves** half-moves are played and it is **player_name**'s turn to move|
-|Shout \<**player**\> **text** |Chat message from **player**|
+|Shout \<**player**\> **text** |Chat message **text** from **player**|
+|Joined room **room** |Indicates you've joined the room **room**|
+|Left room **room** |Indicates you've left the room **room**|
+|ShoutRoom **room** \<**player**\> **text** |Message **text** from **player** to chat room **room**|
+|Tell \<**player**\> **text** |Private chat message **text** from **player**|
+|Told \<**player**\> **text** |Confirmation that your message is sent to **player**. You'll receive this even if **player** is not logged in|
 |Message **text** |A message from server. Might be used to indicate announcements like name accepted/server going down, etc|
 |Error **text** |An error message|
 |Online **no** |**no** players are connected to server|
