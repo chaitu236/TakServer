@@ -12,6 +12,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,11 +40,14 @@ public class Player {
     private int id;//Primary key
 
     //Ratings for 4x4.. 8x8 games
-    private int r4;
-    private int r5;
-    private int r6;
+    private double r4;
+    private double r5;
+    private double r6;
     private int r7;
     private int r8;
+    private double glicko;
+    private double rd;
+    private double vol;
     
     private boolean guest;
     private boolean mod = false;
@@ -49,9 +57,13 @@ public class Player {
     private Game game;
     
     private String resetToken;
+    // Abyss
+    public final ArrayList<Player> recentWins = new ArrayList<Player>(); 
+    public final ArrayList<Player> recentLosses = new ArrayList<Player>();
+    public final ArrayList<Player> recentDraws = new ArrayList<Player>();
     
-    Player(String name, String email, String password, int id, int r4, int r5,
-                        int r6, int r7, int r8, boolean guest) {
+    Player(String name, String email, String password, int id, double r4, 
+            double r5, double r6, int r7, int r8, boolean guest) {
         this.name = name;
         this.email = email;
         this.password = password;
@@ -199,7 +211,7 @@ public class Player {
             stmt.executeUpdate(sql);
             stmt.close();
             
-            EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
+            //EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
             players.put(np.name, np);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -212,7 +224,7 @@ public class Player {
         return name+" "+password+" "+email+" "+r4+" "+r5+" "+r6+" "+r7+" "+r8;
     }
     
-    public void setR4(int r4) {
+    public void setR4(double r4) {
         this.r4 = r4;
         Statement stmt;
         try {
@@ -224,7 +236,7 @@ public class Player {
         }
     }
     
-    public void setR5(int r5) {
+    public void setR5(double r5) {
         this.r5 = r5;
         Statement stmt;
         try {
@@ -236,7 +248,7 @@ public class Player {
         }
     }
     
-    public void setR6(int r6) {
+    public void setR6(double r6) {
         this.r6 = r6;
         Statement stmt;
         try {
@@ -285,15 +297,15 @@ public class Player {
         }
     }
     
-    public int getR4() {
+    public double getR4() {
         return r4;
     }
     
-    public int getR5() {
+    public double getR5() {
         return r5;
     }
     
-    public int getR6() {
+    public double getR6() {
         return r6;
     }
     
@@ -321,6 +333,100 @@ public class Player {
         return id;
     }
     
+    public void addRecentWin(Player opp) {
+        recentWins.add(opp);
+    }
+    
+    public void addRecentLoss(Player opp) {
+        recentLosses.add(opp);
+    }
+    
+    public void addRecentDraw(Player opp) {
+        recentDraws.add(opp);
+    }
+    
+    public void saveNewRating(double g, double r, double s) {
+        this.glicko = g;
+        this.rd = r;
+        this.vol = s;
+    }
+    
+    public void saveNewRating(double r) {
+        this.rd = r;
+    }
+    
+    public void updateRating() {
+        setR4(this.glicko);
+        setR5(this.rd);
+        setR6(this.vol);
+    }
+    
+    public void ratingToDefault() {
+        setR4(1500.0);
+        setR5(350.0);
+        setR6(0.06);
+    }
+    
+    public void clearGames() {
+        recentWins.clear();
+        recentLosses.clear();
+        recentDraws.clear();
+    }
+    
+    public static void updateAllPlayers() {
+        Connection playersConnection = null;
+        String sql = "UPDATE players SET r4 = ? , "
+                + "r5 = ? , r6 = ? "
+                + "WHERE id = ?";
+        try {
+            Class.forName("org.sqlite.JDBC");
+            playersConnection = DriverManager.getConnection("jdbc:sqlite:players.db");
+            PreparedStatement pstmt = playersConnection.prepareStatement(sql);
+            Collection<Player> allPlayers = players.values();
+            playersConnection.setAutoCommit(false);
+            for(Player p : allPlayers){
+                pstmt.setDouble(1, p.glicko);
+                pstmt.setDouble(2, p.rd);
+                pstmt.setDouble(3, p.vol);
+                pstmt.setInt(4, p.id);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+            playersConnection.commit();
+            playersConnection.setAutoCommit(true);
+            playersConnection.close();
+        } catch (ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public static void updateAllPlayers(double[] nums) {
+        Connection playersConnection = null;
+        String sql = "UPDATE players SET r4 = ? , "
+                + "r5 = ? , r6 = ? "
+                + "WHERE id = ?";
+        try {
+            Class.forName("org.sqlite.JDBC");
+            playersConnection = DriverManager.getConnection("jdbc:sqlite:players.db");
+            PreparedStatement pstmt = playersConnection.prepareStatement(sql);
+            Collection<Player> allPlayers = players.values();
+            playersConnection.setAutoCommit(false);
+            for(Player p : allPlayers){
+                pstmt.setDouble(1, 1500);
+                pstmt.setDouble(2, 350);
+                pstmt.setDouble(3, 0.06);
+                pstmt.setInt(4, p.id);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+            playersConnection.commit();
+            playersConnection.setAutoCommit(true);
+            playersConnection.close();
+        } catch (ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     public static void loadFromDB() {
         idCount=0;
         try (Statement stmt = Database.playersConnection.createStatement();
@@ -330,9 +436,9 @@ public class Player {
                         rs.getString("email"),
                         rs.getString("password"),
                         rs.getInt("id"),
-                        rs.getInt("r4"),
-                        rs.getInt("r5"),
-                        rs.getInt("r6"),
+                        rs.getDouble("r4"),
+                        rs.getDouble("r5"),
+                        rs.getDouble("r6"),
                         rs.getInt("r7"),
                         rs.getInt("r8"),
                         false);
