@@ -32,23 +32,32 @@ public class TakRatings {
     
     public static void getGamesFromDB() {
         double[] defaultValues = {1500, 350, 0.06};
-        nextUnix = lastUnix + 86400000L;
+        nextUnix = lastUnix + 86400000L; //1 day
         try (Statement stmt = Database.gamesConnection.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT * FROM games WHERE date > " + lastUnix + 
+                ResultSet rs = stmt.executeQuery("SELECT * FROM games WHERE size > 4 AND date > " + lastUnix + 
                         " AND date < " + nextUnix + " ;")) {
             while(rs.next()) {
                 String w = rs.getString("player_white");
                 String b = rs.getString("player_black");
+                String n = rs.getString("notation");
                 String result = rs.getString("result");
+                int timerTime = rs.getInt("timertime");
+                int increment = rs.getInt("timerinc");
                         
-                if (badPlayers.contains(w))
+                if(badPlayers.contains(w))
                     continue;
-                else if (badPlayers.contains(b))
+                else if(badPlayers.contains(b))
                     continue;
-                else if (w.contains("Guest") || b.contains("Guest"))
+                else if(w.contains("Guest") || b.contains("Guest"))
                     continue;
-                else if (result.contains("0-0"))
+                else if(result.contains("0-0"))
                     continue;
+                else if(n.length() <= 4) { //length==4 if only 1 flat was played
+                    continue;
+                }
+                else if(0 < timerTime && (timerTime + 30 * increment) < 600) { //Fast Games
+                    continue;
+                }
                 else {
                     Player white;
                     Player black;
@@ -67,28 +76,6 @@ public class TakRatings {
                         Player.createPlayer(b, "fake@fake");
                         black = Player.players.get(b);
                     }
-
-                    if(w.contains("Hero")){
-                        white.setR4(1500.0);
-                        white.setR5(200.0);
-                        white.setR6(0.06);
-                    }
-                    if (b.contains("Player1")) {
-                        black.setR4(1400.0);
-                        black.setR5(30.0);
-                        black.setR6(0.06);
-                    }
-                    else if(b.contains("Player2")) {
-                        black.setR4(1550.0);
-                        black.setR5(100.0);
-                        black.setR6(0.06);
-                    }
-                    else if(b.contains("Player3")) {
-                        black.setR4(1700.0);
-                        black.setR5(300.0);
-                        black.setR6(0.06);
-                    }
-                    
                     if ((Objects.equals(result, "1-0")) || 
                             Objects.equals(result, "R-0") || 
                             Objects.equals(result, "F-0")){
@@ -108,11 +95,11 @@ public class TakRatings {
                     }
                     activePlayers.add(white);
                     activePlayers.add(black);
-                    if (white.getR4() != 1500) {
-                        //white.ratingToDefault();
+                    if (white.getR4() == 0) {
+                        white.ratingToDefault();
                     }
-                    if (black.getR4() != 1500 ) {
-                        //black.ratingToDefault();
+                    if (black.getR4() == 0) {
+                        black.ratingToDefault();
                     }
                 }
                 
@@ -120,7 +107,7 @@ public class TakRatings {
          }
          catch (SQLException ex) {
          }
-        Player.updateAllPlayers(defaultValues);
+        //Player.updateAllPlayers(defaultValues);
         System.out.println("Finished");
     }
     
@@ -138,6 +125,10 @@ public class TakRatings {
         Collection<Player> allPlayers = Player.players.values();
         for(Player p : allPlayers) {
             if(activePlayers.contains(p)) {
+                if(p.getName().contains("Abyss")) {
+                    System.out.println(p.recentLosses);
+                    System.out.println(p.recentWins);
+                }
                 //p.updateRating();
                 p.clearGames();
                 //System.out.println("Active: " + p.getName());
@@ -150,6 +141,7 @@ public class TakRatings {
                 //System.out.println("Inactive: " + p.getName());
             }
         }
+        lastUnix += 86400000L;
         Player.updateAllPlayers();
         System.out.println("Really done.");
     }
@@ -166,8 +158,6 @@ public class TakRatings {
         double E;
         boolean flag = false;
         
-        if(mainPlayer.getR4() == 1500)
-            //flag = true;
         for(Player opp : mainPlayer.recentWins) {
             oppMu = (opp.getR4() - 1500) / 173.7178;
             oppPhi = opp.getR5() / 173.7178;
@@ -201,10 +191,6 @@ public class TakRatings {
         v = 1 / v;
         double muPrime = delta; //A slight shortcut
         delta *= v;
-        if(flag) {
-            System.out.println("v: " + v);
-            System.out.println("delta: " + delta);
-        }
         // Begin the Illinois algorithm
         double smallA = Math.log(sigma * sigma);
         double bigA = smallA;
@@ -248,16 +234,10 @@ public class TakRatings {
         // End Illinois alogorithm
         double sigmaPrime = Math.exp(bigA/2);
         //System.out.println(mainPlayer.getName() + " sigmaPrime  " + sigmaPrime);
-        if(flag) {
-            System.out.println(phi);
-        }
         double phiStar = Math.sqrt(phi*phi + sigmaPrime*sigmaPrime);
-        if(flag)
-            System.out.println("Phistar: " + phiStar);
         double phiPrime = 1 / Math.sqrt((1 / (phiStar*phiStar)) + 1 / v);
         muPrime *= (phiPrime*phiPrime);
         muPrime += mu;
-        double ratingPrime = 173.7178 * muPrime + 1500;
         mainPlayer.saveNewRating(173.7178 * muPrime + 1500, 173.7178 * phiPrime, 
                 sigmaPrime);
         
@@ -285,6 +265,6 @@ public class TakRatings {
     private static void inactiveAdjustPhi(Player pl) {
         double phi = pl.getR5();
         double sigma = pl.getR6();
-        pl.saveNewRating(Math.sqrt(phi*phi + sigma*sigma));
+        pl.saveNewInactiveRD(Math.sqrt(phi*phi + sigma*sigma));
     }
 }

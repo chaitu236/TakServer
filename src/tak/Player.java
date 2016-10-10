@@ -226,62 +226,30 @@ public class Player {
     
     public void setR4(double r4) {
         this.r4 = r4;
-        Statement stmt;
-        try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r4 = "+r4+" where id="+id+";";
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //Statement stmt;
+        //try {
+            //stmt = Database.playersConnection.createStatement();
+            //String sql = "UPDATE players set r4 = "+r4+" where id="+id+";";
+            //stmt.executeUpdate(sql);
+        //} catch (SQLException ex) {
+            //Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
+        //}
     }
     
     public void setR5(double r5) {
         this.r5 = r5;
-        Statement stmt;
-        try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r5 = "+r5+" where id="+id+";";
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     
     public void setR6(double r6) {
         this.r6 = r6;
-        Statement stmt;
-        try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r6 = "+r6+" where id="+id+";";
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     
     public void setR7(int r7) {
         this.r7 = r7;
-        Statement stmt;
-        try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r7 = "+r7+" where id="+id+";";
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     
     public void setR8(int r8) {
         this.r8 = r8;
-        Statement stmt;
-        try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r8 = "+r8+" where id="+id+";";
-            stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
     
     public void setPassword(String pass) {
@@ -351,8 +319,10 @@ public class Player {
         this.vol = s;
     }
     
-    public void saveNewRating(double r) {
+    public void saveNewInactiveRD(double r) {
+        this.glicko = this.r4;
         this.rd = r;
+        this.vol = this.r6;
     }
     
     public void updateRating() {
@@ -390,6 +360,7 @@ public class Player {
                 pstmt.setDouble(3, p.vol);
                 pstmt.setInt(4, p.id);
                 pstmt.addBatch();
+                p.updateRating();
             }
             pstmt.executeBatch();
             playersConnection.commit();
@@ -400,30 +371,10 @@ public class Player {
         }
     }
     
-    public static void updateAllPlayers(double[] nums) {
-        Connection playersConnection = null;
-        String sql = "UPDATE players SET r4 = ? , "
-                + "r5 = ? , r6 = ? "
-                + "WHERE id = ?";
-        try {
-            Class.forName("org.sqlite.JDBC");
-            playersConnection = DriverManager.getConnection("jdbc:sqlite:players.db");
-            PreparedStatement pstmt = playersConnection.prepareStatement(sql);
-            Collection<Player> allPlayers = players.values();
-            playersConnection.setAutoCommit(false);
-            for(Player p : allPlayers){
-                pstmt.setDouble(1, 1500);
-                pstmt.setDouble(2, 350);
-                pstmt.setDouble(3, 0.06);
-                pstmt.setInt(4, p.id);
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
-            playersConnection.commit();
-            playersConnection.setAutoCommit(true);
-            playersConnection.close();
-        } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+    public static void allToDefaultR() {
+        Collection<Player> allPlayers = players.values();
+        for (Player p : allPlayers) {
+            p.ratingToDefault();
         }
     }
     
