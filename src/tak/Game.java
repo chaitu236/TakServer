@@ -832,7 +832,7 @@ public class Game {
             Statement stmt = Database.gamesConnection.createStatement();
             String sql = "INSERT INTO games "+
                     "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
-                    gameStateString()+"');";
+                    gameStateString()+"','"+(originalTime/1000)+"','"+(incrementTime/1000)+"');";
             //System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
             stmt.close();
