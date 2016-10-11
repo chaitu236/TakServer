@@ -7,6 +7,7 @@ package tak;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -190,13 +191,23 @@ public class Player {
         String tmpPass = new BigInteger(130, random).toString(32);
         
         Player np = new Player(name, email, Player.hash(tmpPass), false);
+        String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
         try {
-            Statement stmt = Database.playersConnection.createStatement();
-            String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
-                    "VALUES ("+np.id+",'"+np.name+"','"+np.password+"','"+np.email+"',"+
-                    np.r4+","+np.r5+","+np.r6+","+np.r7+","+np.r8+");";
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, np.id);
+            stmt.setString(2, np.name);
+            stmt.setString(3, np.password);
+            stmt.setString(4, np.email);
+            stmt.setInt(5, np.r4);
+            stmt.setInt(6, np.r5);
+            stmt.setInt(7, np.r6);
+            stmt.setInt(8, np.r7);
+            stmt.setInt(9, np.r8);
+            
             //System.out.println("SQL:: "+sql);
-            stmt.executeUpdate(sql);
+            stmt.executeUpdate();
             stmt.close();
             
             EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
@@ -214,11 +225,14 @@ public class Player {
     
     public void setR4(int r4) {
         this.r4 = r4;
-        Statement stmt;
+        String sql = "UPDATE players set r4 = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r4 = "+r4+" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, r4);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -226,11 +240,14 @@ public class Player {
     
     public void setR5(int r5) {
         this.r5 = r5;
-        Statement stmt;
+        String sql = "UPDATE players set r5 = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r5 = "+r5+" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, r5);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -238,11 +255,14 @@ public class Player {
     
     public void setR6(int r6) {
         this.r6 = r6;
-        Statement stmt;
+        String sql = "UPDATE players set r6 = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r6 = "+r6+" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, r6);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -250,11 +270,14 @@ public class Player {
     
     public void setR7(int r7) {
         this.r7 = r7;
-        Statement stmt;
+        String sql = "UPDATE players set r7 = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r7 = "+r7+" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, r7);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -262,11 +285,14 @@ public class Player {
     
     public void setR8(int r8) {
         this.r8 = r8;
-        Statement stmt;
+        String sql = "UPDATE players set r8 = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set r8 = "+r8+" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setInt(1, r8);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -275,11 +301,14 @@ public class Player {
     public void setPassword(String pass) {
         this.password = Player.hash(pass);
         
-        Statement stmt;
+        String sql = "UPDATE players set password = ? where id = ?;";
+        
         try {
-            stmt = Database.playersConnection.createStatement();
-            String sql = "UPDATE players set password = \""+this.password+"\" where id="+id+";";
-            stmt.executeUpdate(sql);
+            PreparedStatement stmt = Database.playersConnection.prepareStatement(sql);
+            stmt.setString(1, this.password);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
