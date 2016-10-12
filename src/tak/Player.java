@@ -343,6 +343,13 @@ public class Player {
         recentDraws.clear();
     }
     
+    public static void updateAllNoSQL() {
+        Collection<Player> allPlayers = players.values();
+        for(Player p : allPlayers) {
+            p.updateRating();
+        }
+    }
+    
     public static void updateAllPlayers() {
         Connection playersConnection = null;
         String sql = "UPDATE players SET r4 = ? , "

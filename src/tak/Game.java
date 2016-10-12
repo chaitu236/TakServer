@@ -839,6 +839,9 @@ public class Game {
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
+        if(time > TakRatings.endUnix) {
+            TakRatings.calculate();
+        }
     }
     
     void sendMove(Player p, String move) {

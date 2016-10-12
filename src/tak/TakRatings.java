@@ -11,16 +11,21 @@ import java.sql.Statement;
 import java.lang.Math;
 import java.util.*;
 /**
- *
+ * Glicko ratings are calculated every interval of time, currently every 2 days.
+ * Calling the public calculateAll() method will calculate all ratings from the 
+ * very beginning of the non-anonymous database, i.e. April 23rd. The calculate() 
+ * public method will calculate only the ratings from the most recent period. It
+ * will be called from within the Game Class. 
  * @author Abyss
  */
 public class TakRatings {
     
-    static final double TAO = 0.7;
-    static final double EPSILON = 0.000001; //Convergence tolerance
+    private static final double TAO = 0.7; // Systems constant
+    private static final double EPSILON = 0.000001; //Convergence tolerance
     public static Set<Player> activePlayers = new HashSet();
-    public static long lastUnix = 1475002312429L;
-    static long nextUnix;
+    public static long interval = 172800000L; // 2 days
+    public static long startUnix = 1461369600000L; //April 23rd //1475002312429L;
+    public static long endUnix;
     public static final String[] SET_VALUES = new String[] { "alphabot", "alphatak_bot", 
        "TakticianBot", "TakticianBotDev", "ShlktBot", "cutak_bot", "takkybot",
         "AlphaTakBot_5x5", "TakkerusBot", "BeginnerBot", "TakticianDev", "FriendlyBot", 
@@ -30,12 +35,35 @@ public class TakRatings {
     
     
     
-    public static void getGamesFromDB() {
+    public static void calculate() {
+        getGamesFromDB();
+        calcRatings();
+        Player.updateAllPlayers(); //Updates and changes SQL database
+    }
+    
+    public static void calculateAll(long time) {
+        while(TakRatings.startUnix + interval + interval < time) { // 4 days out
+            TakRatings.getGamesFromDB();
+            TakRatings.calcRatings();
+            Player.updateAllNoSQL(); // Just updates internal ratings.
+        }
+        Player.updateAllPlayers(); //Updates (redundant) and changes databases.
+        TakServer.Log("Finished calculation of all ratings");
+    }
+    
+    public static void printActivePlayers() {
+        for(Player x : activePlayers) {
+            String name = x.getName();
+            System.out.println(name);
+        }
+    }
+    
+    private static void getGamesFromDB() {
         double[] defaultValues = {1500, 350, 0.06};
-        nextUnix = lastUnix + 86400000L; //1 day
+        endUnix = startUnix + interval; //2 days
         try (Statement stmt = Database.gamesConnection.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT * FROM games WHERE size > 4 AND date > " + lastUnix + 
-                        " AND date < " + nextUnix + " ;")) {
+                ResultSet rs = stmt.executeQuery("SELECT * FROM games WHERE size > 4 AND date > " + startUnix + 
+                        " AND date < " + endUnix + " ;")) {
             while(rs.next()) {
                 String w = rs.getString("player_white");
                 String b = rs.getString("player_black");
@@ -66,15 +94,17 @@ public class TakRatings {
                         white = Player.players.get(w);  
                     }
                     else {
-                        Player.createPlayer(w, "fake@fake");
-                        white = Player.players.get(w); 
+                        continue; //This should not fire.
+                        //Player.createPlayer(w, "fake@fake");
+                        //white = Player.players.get(w); 
                     }
                     if(Player.players.containsKey(b)) {
                         black = Player.players.get(b); 
                     }
                     else {
-                        Player.createPlayer(b, "fake@fake");
-                        black = Player.players.get(b);
+                        continue; // This should not fire.
+                        //Player.createPlayer(b, "fake@fake");
+                        //black = Player.players.get(b);
                     }
                     if ((Objects.equals(result, "1-0")) || 
                             Objects.equals(result, "R-0") || 
@@ -108,42 +138,31 @@ public class TakRatings {
          catch (SQLException ex) {
          }
         //Player.updateAllPlayers(defaultValues);
-        System.out.println("Finished");
+        //System.out.println("Finished");
     }
     
-    public static void printActivePlayers() {
-        for(Player x : activePlayers) {
-            String name = x.getName();
-            System.out.println(name);
-        }
-    }
   
-    public static void calcRatings() {
+    private static void calcRatings() {
         for(Player p : activePlayers) {
             calcGlicko2(p);
         }
         Collection<Player> allPlayers = Player.players.values();
         for(Player p : allPlayers) {
             if(activePlayers.contains(p)) {
-                if(p.getName().contains("Abyss")) {
-                    System.out.println(p.recentLosses);
-                    System.out.println(p.recentWins);
-                }
+                //if(p.getName().contains("Abyss")) {
+                    //System.out.println(p.recentLosses);
+                    //System.out.println(p.recentWins);
+                //}
                 //p.updateRating();
                 p.clearGames();
-                //System.out.println("Active: " + p.getName());
-                //System.out.println("Recent wins: " + p.recentWins);
-                //System.out.println("Recent losses: " + p.recentLosses);
-                //System.out.println("Glicko: " + p.getR4() + " RD: " + p.getR5());
             }
             else {
                 inactiveAdjustPhi(p);
                 //System.out.println("Inactive: " + p.getName());
             }
         }
-        lastUnix += 86400000L;
-        Player.updateAllPlayers();
-        System.out.println("Really done.");
+        startUnix = endUnix;
+        endUnix += interval;
     }
     
     private static void calcGlicko2(Player mainPlayer) {
@@ -156,7 +175,6 @@ public class TakRatings {
         double oppPhi;
         double goj;
         double E;
-        boolean flag = false;
         
         for(Player opp : mainPlayer.recentWins) {
             oppMu = (opp.getR4() - 1500) / 173.7178;
@@ -165,9 +183,6 @@ public class TakRatings {
             E = gl2E(mu, oppMu, oppPhi);
             v += ((goj*goj) * E * (1-E));
             delta += (goj * (1-E)); // 1 - E because these are just wins.
-            if(flag) {
-                System.out.println(opp.getName() + "   " + E);
-            }
         }
         for(Player opp : mainPlayer.recentLosses) {
             oppMu = (opp.getR4() - 1500) / 173.7178;
@@ -176,9 +191,6 @@ public class TakRatings {
             E = gl2E(mu, oppMu, oppPhi);
             v += ((goj*goj) * E * (1-E));
             delta += (goj * (0-E)); // 0 - E because these are just losses.
-            if(flag) {
-                System.out.println(opp.getName() + "   " + E);
-            }
         }
         for(Player opp : mainPlayer.recentDraws) {
             oppMu = (opp.getR4() - 1500) / 173.7178;
@@ -224,12 +236,6 @@ public class TakRatings {
             }
             B = C;
             fb = fc;
-            if(flag) {
-                System.out.println("A: " + bigA);
-                System.out.println("B: " + B);
-                System.out.println("fa: " + fa);
-                System.out.println("fb: " + fb);
-                }
         }
         // End Illinois alogorithm
         double sigmaPrime = Math.exp(bigA/2);

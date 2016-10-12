@@ -37,6 +37,7 @@ public class TakServer extends Thread{
         }
     }
     public static void main(String[] args) {
+        long time = System.currentTimeMillis();
         Settings.parse();
         Database.initConnection();
         Player.loadFromDB();
@@ -50,6 +51,20 @@ public class TakServer extends Thread{
         TakServer takServer = new TakServer();
         takServer.start();
         TakServer.Log("dir: "+System.getProperty("user.dir"));
+        /* This condition should be whether or not all user's ratings should
+        be recalculated from the very beginning of ratings time, April 23rd. 
+        This can be decided at your discretion, and should probably involved
+        saving the TakRatings.startUnix variable to some output. I will leave
+        it true for now, so it will always reset and calculate all ratings when
+        the server is run.*/
+        if(true) { 
+            Player.allToDefaultR();
+            TakRatings.calculateAll(time);
+        }
+        else {
+           //Initialize TakRatings.startUnix to a predefined value.
+        }
+        
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
             @Override
