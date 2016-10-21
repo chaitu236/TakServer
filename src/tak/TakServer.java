@@ -58,8 +58,11 @@ public class TakServer extends Thread{
         it true for now, so it will always reset and calculate all ratings when
         the server is run.*/
         if(true) { 
-            Player.allToDefaultR();
-            TakRatings.calculateAll(time);
+            TakServer.Log("Starting attempt");
+            //Player.allToDefaultR();
+            //TakRatings.calculateAll(time);
+            Elo.getGamesSince(1461369600000L);
+            TakServer.Log("I did it.");
         }
         else {
            //Initialize TakRatings.startUnix to a predefined value.

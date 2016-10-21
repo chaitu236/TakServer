@@ -840,7 +840,11 @@ public class Game {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
         if(time > TakRatings.endUnix) {
-            TakRatings.calculate();
+            if(TakRatings.calculating) {   
+            }
+            else {
+            TakRatings.calculate();    
+            }  
         }
     }
     

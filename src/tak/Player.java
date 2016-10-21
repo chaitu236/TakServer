@@ -44,7 +44,7 @@ public class Player {
     private double r5;
     private double r6;
     private int r7;
-    private int r8;
+    private float r8;
     private double glicko;
     private double rd;
     private double vol;
@@ -58,9 +58,9 @@ public class Player {
     
     private String resetToken;
     // Abyss
-    public final ArrayList<Player> recentWins = new ArrayList<Player>(); 
-    public final ArrayList<Player> recentLosses = new ArrayList<Player>();
-    public final ArrayList<Player> recentDraws = new ArrayList<Player>();
+    public final ArrayList<Player> recentWins = new ArrayList<>(); 
+    public final ArrayList<Player> recentLosses = new ArrayList<>();
+    public final ArrayList<Player> recentDraws = new ArrayList<>();
     
     Player(String name, String email, String password, int id, double r4, 
             double r5, double r6, int r7, int r8, boolean guest) {
@@ -211,7 +211,7 @@ public class Player {
             stmt.executeUpdate(sql);
             stmt.close();
             
-            //EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
+            //EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com."); //ABYSS TURN THIS BACK ON!!!!!
             players.put(np.name, np);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
@@ -248,7 +248,7 @@ public class Player {
         this.r7 = r7;
     }
     
-    public void setR8(int r8) {
+    public void setR8(float r8) {
         this.r8 = r8;
     }
     
@@ -281,7 +281,7 @@ public class Player {
         return r7;
     }
     
-    public int getR8() {
+    public float getR8() {
         return r8;
     }
     
@@ -332,9 +332,11 @@ public class Player {
     }
     
     public void ratingToDefault() {
-        setR4(1500.0);
-        setR5(350.0);
-        setR6(0.06);
+        setR4(1000.0);
+        setR5(550);
+        setR6(1000.0);
+        setR7(0);
+        setR8(10);
     }
     
     public void clearGames() {
@@ -353,7 +355,7 @@ public class Player {
     public static void updateAllPlayers() {
         Connection playersConnection = null;
         String sql = "UPDATE players SET r4 = ? , "
-                + "r5 = ? , r6 = ? "
+                + "r5 = ? , r6 = ?, r7 = ?, r8 = ? "
                 + "WHERE id = ?";
         try {
             Class.forName("org.sqlite.JDBC");
@@ -362,10 +364,12 @@ public class Player {
             Collection<Player> allPlayers = players.values();
             playersConnection.setAutoCommit(false);
             for(Player p : allPlayers){
-                pstmt.setDouble(1, p.glicko);
-                pstmt.setDouble(2, p.rd);
-                pstmt.setDouble(3, p.vol);
-                pstmt.setInt(4, p.id);
+                pstmt.setDouble(1, p.r4);
+                pstmt.setDouble(2, p.r5);
+                pstmt.setDouble(3, p.r6);
+                pstmt.setInt(4, p.r7);
+                pstmt.setFloat(5, p.r8);
+                pstmt.setInt(6, p.id);
                 pstmt.addBatch();
                 p.updateRating();
             }
