@@ -37,7 +37,7 @@ public class TakServer extends Thread{
         }
     }
     public static void main(String[] args) {
-        long time = System.currentTimeMillis();
+        //long time = System.currentTimeMillis();
         Settings.parse();
         Database.initConnection();
         Player.loadFromDB();
@@ -60,7 +60,7 @@ public class TakServer extends Thread{
         if(true) { 
             TakServer.Log("Starting attempt");
             //Player.allToDefaultR();
-            //TakRatings.calculateAll(time);
+            //Glicko.calculateAll(time);
             Elo.getGamesSince(1461369600000L);
             TakServer.Log("I did it.");
         }

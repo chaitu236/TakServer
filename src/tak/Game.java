@@ -829,23 +829,34 @@ public class Game {
     
     void saveToDB() {
         try {
+            String wName = white.getName();
+            String bName = black.getName();
             Statement stmt = Database.gamesConnection.createStatement();
             String sql = "INSERT INTO games "+
-                    "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
+                    "VALUES (NULL,"+time+","+board.boardSize+",'"+wName+"','"+bName+"','"+moveListString()+"','"+
                     gameStateString()+"');";
             //System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
             stmt.close();
+            if(board.moveCount > 2) {
+                if(gameStateString().contains("0-0") | 
+                        gameStateString().contains("---")) {
+                    
+                }
+                else if(wName.contains("Guest") | bName.contains("Guest")) {
+                    
+                }
+                else if(Elo.badPlayers.contains(wName) | Elo.badPlayers.contains(bName)) {
+                    
+                }
+                else if(30*incrementTime/1000.0 + originalTime/1000 >= 600) {
+                    Elo.calcGame(white, black, gameStateString());
+                }
+            }
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
-        if(time > TakRatings.endUnix) {
-            if(TakRatings.calculating) {   
-            }
-            else {
-            TakRatings.calculate();    
-            }  
-        }
+        
     }
     
     void sendMove(Player p, String move) {

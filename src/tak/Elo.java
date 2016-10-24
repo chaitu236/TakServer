@@ -30,23 +30,7 @@ public class Elo {
     public static final int BONUSRATING = 550;
     public static final int BONUSFACTOR = 60;
     
-    public static float winLossDraw(String result) {
-        //This will only be called for white
-        if ((Objects.equals(result, "1-0")) || 
-            Objects.equals(result, "R-0") || 
-            Objects.equals(result, "F-0")) {
-            return 1;
-        }
-        else if ((Objects.equals(result, "0-1")) || 
-                Objects.equals(result, "0-R") || 
-                Objects.equals(result, "0-F")) {
-            return 0;
-        }
-        else {
-            return (float) 0.5;
-        }
-    }
-    
+
     public static void getGamesSince(Long time) {
         if(time == startUnix) { //We are calculating from the "beginning of time"
             Player.allToDefaultR();
@@ -98,8 +82,7 @@ public class Elo {
                         Player.createPlayer(b, "fake@fake");
                         black = Player.players.get(b);
                     }
-                    float r = winLossDraw(result);
-                    calcGame(white, black, r);
+                    calcGame(white, black, result);
                 }
                
             }
@@ -110,7 +93,8 @@ public class Elo {
         Player.updateAllPlayers(); //Sends to the Sql database
     }
     
-    public static void calcGame(Player white, Player black, float result) {
+    public static void calcGame(Player white, Player black, String r) {
+        float result = winLossDraw(r);
         double whiteStrength = strengthFunc(white.getR4());
         double blackStrength = strengthFunc(black.getR4());
         double expected = whiteStrength / (whiteStrength + blackStrength);
@@ -127,6 +111,23 @@ public class Elo {
         else { 
             adjustPlayer(white, result - expected, fairness);
             adjustPlayer(black, expected - result, fairness);
+        }
+    }
+    
+    private static float winLossDraw(String result) {
+        //This considers white's numerical result
+        if ((Objects.equals(result, "1-0")) || 
+            Objects.equals(result, "R-0") || 
+            Objects.equals(result, "F-0")) {
+            return 1;
+        }
+        else if ((Objects.equals(result, "0-1")) || 
+                Objects.equals(result, "0-R") || 
+                Objects.equals(result, "0-F")) {
+            return 0;
+        }
+        else {
+            return (float) 0.5;
         }
     }
     
