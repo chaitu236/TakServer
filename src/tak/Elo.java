@@ -7,15 +7,17 @@ package tak;
 import java.lang.Math;
 import java.util.Objects;
 import java.util.HashSet;
+import java.util.Collection;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+//import java.util.*;
 
 /**
  *
- * @author Abyss, NohatCoder
+ * @author NohatCoder, Abyss
  */
 public class Elo {
     
@@ -24,14 +26,17 @@ public class Elo {
         "FriendlyBot"}; //These players' games should never be counted
     public static final String[] BOTACCOUNTS = new String[] {"alphabot", "alphatak_bot", 
     "TakticianBot", "TakticianBotDev", "ShlktBot", "takkybot", "AlphaTakBot_5x5", 
-    "TakkerusBot", "BeginnerBot", "TakticianDev", "IntuitionBot"};
+    "TakkerusBot", "BeginnerBot", "TakticianDev", "IntuitionBot", "AaaarghBot"};
     public static HashSet<String> badPlayers = new HashSet<>(Arrays.asList(INVALID));
     public static HashSet<String> bots = new HashSet<>(Arrays.asList(BOTACCOUNTS));
     public static final int BONUSRATING = 550;
     public static final int BONUSFACTOR = 60;
+    public static final float PARTLIMIT = (float)10.0;
+    public static final int PARTCUTOFF = 1500;
     
 
     public static void getGamesSince(Long time) {
+        long lastDate = time;
         if(time == startUnix) { //We are calculating from the "beginning of time"
             Player.allToDefaultR();
         }
@@ -45,6 +50,7 @@ public class Elo {
                 String result = rs.getString("result");
                 int timerTime = rs.getInt("timertime");
                 int increment = rs.getInt("timerinc");
+                long date = rs.getLong("date");
                 if(badPlayers.contains(w)) {
 
                 }
@@ -64,6 +70,14 @@ public class Elo {
                     
                 }
                 else { 
+                    //Placing the check here saves some checks overall, but
+                    //it assumes that at least one game is played every day
+                    //on the server. 
+                    if(date-lastDate > 86400000) {
+                        newDay(date);
+                        lastDate = date;
+                    }
+                    //lastDate = Math.max(lastDate, date);
                     Player white;
                     Player black;
                     if(Player.players.containsKey(w)) {
@@ -114,6 +128,17 @@ public class Elo {
         }
     }
     
+    public static void calcDisplayRating(Player p) {
+        float rating = p.getR4();
+        float participation = p.getR8();
+        if(rating > PARTCUTOFF && participation < PARTLIMIT) {
+            p.setDisplayRating(PARTCUTOFF + (rating - PARTCUTOFF)*(participation/PARTLIMIT));
+        }
+        else {
+            p.setDisplayRating(rating);
+        }
+    }
+    
     private static float winLossDraw(String result) {
         //This considers white's numerical result
         if ((Objects.equals(result, "1-0")) || 
@@ -147,15 +172,34 @@ public class Elo {
         if(pl.getId()==27) {
             //System.out.println("bonus: " + bonus);
         }
-        pl.setR5(hidden - bonus);
+        pl.setR5((float)(hidden - bonus));
         double k = 10 + 15.0 * Math.pow(0.5, (float)games/200) + (15.0 * 
                 Math.pow(0.5, (float)(maxRating - 1000) / 300.0));
-        pl.setR4(initRating + amount * k + bonus);
+        pl.setR4((float)(initRating + amount * k + bonus));
         pl.setR8(participation + (float)fairness);
         pl.setR7(games + 1);
         if(maxRating < pl.getR4()) {
             pl.setR6(pl.getR4());
         }
+        calcDisplayRating(pl);
         
-    } 
+    }
+    
+    private static void newDay(long timeStamp) { 
+        //java.util.Date time = new java.util.Date(timeStamp);
+        Collection<Player> allPlayers = Player.players.values();
+        for(Player p : allPlayers) {
+            if(p.getR7() > 0) { //Do not penalize the player before they play.
+                double newPart = Math.min(p.getR8()*0.995, 20.0);
+//                if(p.getName().contains("Gerrek")) {
+//                    calcDisplayRating(p);
+//                    if(p.getDisplayRating() != p.getR4()) {
+//                        System.out.println(time + " : ");
+//                        System.out.println(p.getDisplayRating() - p.getR4());
+//                    }
+//                }
+                p.setR8((float) newPart);     
+            }
+        }
+    }
 }

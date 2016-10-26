@@ -39,15 +39,16 @@ public class Player {
     private String email;
     private int id;//Primary key
 
-    //Ratings for 4x4.. 8x8 games
-    private double r4;
-    private double r5;
-    private double r6;
+    //r4 = elo, r5 = hidden, r6 = best elo, r7 = games, r8 = participation
+    private float r4;
+    private float r5;
+    private float r6;
     private int r7;
     private float r8;
-    private double glicko;
-    private double rd;
-    private double vol;
+    private float displayRating;
+    //private double glicko;
+    //private double rd;
+    //private double vol;
     
     private boolean guest;
     private boolean mod = false;
@@ -62,8 +63,8 @@ public class Player {
     public final ArrayList<Player> recentLosses = new ArrayList<>();
     public final ArrayList<Player> recentDraws = new ArrayList<>();
     
-    Player(String name, String email, String password, int id, double r4, 
-            double r5, double r6, int r7, int r8, boolean guest) {
+    Player(String name, String email, String password, int id, float r4, 
+            float r5, float r6, int r7, float r8, boolean guest) {
         this.name = name;
         this.email = email;
         this.password = password;
@@ -224,7 +225,7 @@ public class Player {
         return name+" "+password+" "+email+" "+r4+" "+r5+" "+r6+" "+r7+" "+r8;
     }
     
-    public void setR4(double r4) {
+    public void setR4(float r4) {
         this.r4 = r4;
         //Statement stmt;
         //try {
@@ -236,11 +237,11 @@ public class Player {
         //}
     }
     
-    public void setR5(double r5) {
+    public void setR5(float r5) {
         this.r5 = r5;
     }
     
-    public void setR6(double r6) {
+    public void setR6(float r6) {
         this.r6 = r6;
     }
     
@@ -250,6 +251,10 @@ public class Player {
     
     public void setR8(float r8) {
         this.r8 = r8;
+    }
+    
+    public void setDisplayRating(float dr) {
+        this.displayRating = dr;
     }
     
     public void setPassword(String pass) {
@@ -265,15 +270,15 @@ public class Player {
         }
     }
     
-    public double getR4() {
+    public float getR4() {
         return r4;
     }
     
-    public double getR5() {
+    public float getR5() {
         return r5;
     }
     
-    public double getR6() {
+    public float getR6() {
         return r6;
     }
     
@@ -283,6 +288,10 @@ public class Player {
     
     public float getR8() {
         return r8;
+    }
+    
+    public float getDisplayRating() {
+        return displayRating;
     }
     
     public String getName() {
@@ -314,29 +323,30 @@ public class Player {
     }
     
     public void saveNewRating(double g, double r, double s) {
-        this.glicko = g;
-        this.rd = r;
-        this.vol = s;
+        //this.glicko = g;
+        //this.rd = r;
+        //this.vol = s;
     }
     
     public void saveNewInactiveRD(double r) {
-        this.glicko = this.r4;
-        this.rd = r;
-        this.vol = this.r6;
+        //this.glicko = this.r4;
+        //this.rd = r;
+        //this.vol = this.r6;
     }
     
     public void updateRating() {
-        setR4(this.glicko);
-        setR5(this.rd);
-        setR6(this.vol);
+        //setR4(this.glicko);
+        //setR5(this.rd);
+        //setR6(this.vol);
     }
     
     public void ratingToDefault() {
-        setR4(1000.0);
+        setR4((float)1000.0);
         setR5(550);
-        setR6(1000.0);
+        setR6((float)1000.0);
         setR7(0);
         setR8(10);
+        setDisplayRating((float)1000.0);
     }
     
     public void clearGames() {
@@ -398,14 +408,15 @@ public class Player {
                         rs.getString("email"),
                         rs.getString("password"),
                         rs.getInt("id"),
-                        rs.getDouble("r4"),
-                        rs.getDouble("r5"),
-                        rs.getDouble("r6"),
+                        rs.getFloat("r4"),
+                        rs.getFloat("r5"),
+                        rs.getFloat("r6"),
                         rs.getInt("r7"),
-                        rs.getInt("r8"),
+                        rs.getFloat("r8"),
                         false);
 
                 //System.out.println("Read player "+np);
+                np.displayRating = np.r4;
                 players.put(np.name, np);
                 if(idCount<np.id)
                     idCount=np.id;
