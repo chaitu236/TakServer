@@ -4,7 +4,6 @@
  * and open the template in the editor.
  */
 package tak;
-import java.lang.Math;
 import java.util.Objects;
 import java.util.HashSet;
 import java.util.Collection;

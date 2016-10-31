@@ -212,7 +212,7 @@ public class Player {
             stmt.executeUpdate(sql);
             stmt.close();
             
-            //EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com."); //ABYSS TURN THIS BACK ON!!!!!
+            EMail.send(np.email, "playtak.com password", "Your password is "+tmpPass+". You can change it on playtak.com.");
             players.put(np.name, np);
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);

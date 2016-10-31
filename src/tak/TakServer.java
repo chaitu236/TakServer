@@ -62,7 +62,7 @@ public class TakServer extends Thread{
             //Player.allToDefaultR();
             //Glicko.calculateAll(time);
             Elo.getGamesSince(1461369600000L);
-            TakServer.Log("I did it.");
+            TakServer.Log("All ratings calculated.");
         }
         else {
            //Initialize TakRatings.startUnix to a predefined value.

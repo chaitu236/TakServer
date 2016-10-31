@@ -8,7 +8,6 @@ package tak;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.lang.Math;
 import java.util.*;
 /**
  * Glicko ratings are calculated every interval of time, currently every 2 days.
