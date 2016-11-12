@@ -39,7 +39,9 @@ public class Player {
     private String email;
     private int id;//Primary key
 
-    //r4 = elo, r5 = hidden, r6 = best elo, r7 = games, r8 = participation
+    /* r4 = elo, r5 = hidden, r6 = best elo, r7 = games, r8 = participation
+    displayRating is what should be displayed by the client as the player's 
+    official rating, though usually this will be equal to r4. */
     private float r4;
     private float r5;
     private float r6;
@@ -203,6 +205,7 @@ public class Player {
         String tmpPass = new BigInteger(130, random).toString(32);
         
         Player np = new Player(name, email, Player.hash(tmpPass), false);
+        np.ratingToDefault();
         try {
             Statement stmt = Database.playersConnection.createStatement();
             String sql = "INSERT INTO players (id,name,password,email,r4,r5,r6,r7,r8) "+
@@ -415,8 +418,7 @@ public class Player {
                         rs.getFloat("r8"),
                         false);
 
-                //System.out.println("Read player "+np);
-                np.displayRating = np.r4;
+                Elo.calcDisplayRating(np);
                 players.put(np.name, np);
                 if(idCount<np.id)
                     idCount=np.id;

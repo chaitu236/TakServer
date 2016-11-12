@@ -20,7 +20,8 @@ import java.sql.Statement;
  */
 public class Elo {
     
-    public static final long startUnix = 1461369600000L; //April 23rd
+    public static final long STARTUNIX = 1461369600000L; //April 23rd at 0:00 UTC
+    public static long lastDate = STARTUNIX;
     public static final String[] INVALID = new String[] {"cutak_bot", "Anon",
         "FriendlyBot"}; //These players' games should never be counted
     public static final String[] BOTACCOUNTS = new String[] {"alphabot", "alphatak_bot", 
@@ -35,8 +36,8 @@ public class Elo {
     
 
     public static void getGamesSince(Long time) {
-        long lastDate = time;
-        if(time == startUnix) { //We are calculating from the "beginning of time"
+        lastDate = time;
+        if(time == STARTUNIX) { //We are calculating from the "beginning of time"
             Player.allToDefaultR();
         }
         try (Statement stmt = Database.gamesConnection.createStatement();
@@ -74,7 +75,6 @@ public class Elo {
                     //on the server. 
                     if(date-lastDate > 86400000) {
                         newDay(date);
-                        lastDate = date;
                     }
                     //lastDate = Math.max(lastDate, date);
                     Player white;
@@ -83,17 +83,17 @@ public class Elo {
                         white = Player.players.get(w);  
                     }
                     else {
-                        //continue; //This should not fire.
-                        Player.createPlayer(w, "fake@fake");
-                        white = Player.players.get(w); 
+                        continue; //This should not fire.
+//                        Player.createPlayer(w, "fake@fake");
+//                        white = Player.players.get(w); 
                     }
                     if(Player.players.containsKey(b)) {
                         black = Player.players.get(b); 
                     }
                     else {
-                        //continue; // This should not fire.
-                        Player.createPlayer(b, "fake@fake");
-                        black = Player.players.get(b);
+                        continue; // This should not fire.
+//                        Player.createPlayer(b, "fake@fake");
+//                        black = Player.players.get(b);
                     }
                     calcGame(white, black, result);
                 }
@@ -136,6 +136,11 @@ public class Elo {
         else {
             p.setDisplayRating(rating);
         }
+    }
+    
+    public static void newDayFromGame(long timeStamp) {
+        newDay(timeStamp);
+        Player.updateAllPlayers();
     }
     
     private static float winLossDraw(String result) {
@@ -188,17 +193,11 @@ public class Elo {
         //java.util.Date time = new java.util.Date(timeStamp);
         Collection<Player> allPlayers = Player.players.values();
         for(Player p : allPlayers) {
-            if(p.getR7() > 0) { //Do not penalize the player before they play.
+            if(p.getR7() > 0) { //Do not penalize the player before they exist.
                 double newPart = Math.min(p.getR8()*0.995, 20.0);
-//                if(p.getName().contains("Gerrek")) {
-//                    calcDisplayRating(p);
-//                    if(p.getDisplayRating() != p.getR4()) {
-//                        System.out.println(time + " : ");
-//                        System.out.println(p.getDisplayRating() - p.getR4());
-//                    }
-//                }
-                p.setR8((float) newPart);     
+                p.setR8((float) newPart);
             }
         }
+        lastDate = timeStamp;
     }
 }

@@ -51,21 +51,19 @@ public class TakServer extends Thread{
         TakServer takServer = new TakServer();
         takServer.start();
         TakServer.Log("dir: "+System.getProperty("user.dir"));
-        /* This condition should be whether or not all user's ratings should
-        be recalculated from the very beginning of ratings time, April 23rd. 
-        This can be decided at your discretion, and should probably involved
-        saving the TakRatings.startUnix variable to some output. I will leave
-        it true for now, so it will always reset and calculate all ratings when
-        the server is run.*/
+        /* Currently we are always calculating ratings from all games upon
+        startup. This should be changed later on, when you decide how exactly
+        you want to track when the last ratings calculation was. For now, though
+        it makes very little difference, as the ratings calculation takes about
+        1-2 seconds in total. NOTE: When displaying player's ratings, use the
+        method .getDisplayRating() , not .getR4(). 
+        */
         if(true) { 
             TakServer.Log("Starting attempt");
             //Player.allToDefaultR();
             //Glicko.calculateAll(time);
             Elo.getGamesSince(1461369600000L);
             TakServer.Log("All ratings calculated.");
-        }
-        else {
-           //Initialize TakRatings.startUnix to a predefined value.
         }
         
         Runtime.getRuntime().addShutdownHook(new Thread()

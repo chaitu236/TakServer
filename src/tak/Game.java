@@ -833,11 +833,14 @@ public class Game {
             String bName = black.getName();
             Statement stmt = Database.gamesConnection.createStatement();
             String sql = "INSERT INTO games "+
-                    "VALUES (NULL,"+time+","+board.boardSize+",'"+wName+"','"+bName+"','"+moveListString()+"','"+
-                    gameStateString()+"');";
+                    "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
+                    gameStateString()+"','"+(originalTime/1000)+"','"+(incrementTime/1000)+"');";
             //System.out.println("SQL:: "+sql);
             stmt.executeUpdate(sql);
             stmt.close();
+            if(time - Elo.lastDate > 86400000) {
+                Elo.newDayFromGame(time);
+            }
             if(board.moveCount > 2) {
                 if(gameStateString().contains("0-0") | 
                         gameStateString().contains("---")) {
