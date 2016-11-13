@@ -8,6 +8,7 @@ package tak;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +35,7 @@ public class Game {
     long time;
 
     int no;
-    
+
     //time in milli seconds
     long originalTime;
     long incrementTime;
@@ -44,24 +45,24 @@ public class Game {
     boolean timerStarted;
     Timer timer;
     Timer disconnectionTimer;
-    
+
     Player drawOfferedBy;
     Player undoRequestedBy;
-    
+
     boolean abandoned;
-    
+
     Set<Player> spectators;
-    
+
     public enum gameS {WHITE_ROAD, BLACK_ROAD, WHITE_TILE, BLACK_TILE, DRAW,
                         WHITE, BLACK, ABORT, NONE};
     List<String> moveList;
     gameS gameState;
-    
+
     static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
     static Set<Player> gameListeners = Collections.synchronizedSet(new HashSet<Player>());
-    
+
     public static int reconnectionTime;
-    
+
     class Board {
         int boardSize;
         int moveCount;
@@ -70,7 +71,7 @@ public class Game {
 
         int whiteTilesCount;
         int blackTilesCount;
-        
+
         class Square {
             private int file, row;
             private ArrayList<Character> stack;
@@ -128,12 +129,12 @@ public class Game {
             }
         }
         Square[][] squares;
-        
+
         Board(int b) {
             if (b < 3 || b > 8) {
                 b = DEFAULT_SIZE;
             }
-            
+
             boardSize = b;
             int capstonesCount=0;
             int tilesCount=0;
@@ -145,12 +146,12 @@ public class Game {
                 case 7: capstonesCount = 2; tilesCount = 40; break;
                 case 8: capstonesCount = 2; tilesCount = 50; break;
             }
-            
+
             whiteCapstones = blackCapstones = capstonesCount;
             whiteTilesCount = blackTilesCount = tilesCount;
-            
+
             moveCount = 0;
-            
+
             squares = new Square[boardSize][boardSize];
             for (int i = 0; i < b; i++) {
                 for (int j = 0; j < b; j++) {
@@ -158,7 +159,7 @@ public class Game {
                 }
             }
         }
-        
+
         Board(int boardSize, int moveCount, int whiteCapstones,
                 int blackCapstones, int whiteTilesCount, int blackTilesCount,
                 Square[][] squares) {
@@ -170,14 +171,14 @@ public class Game {
             this.blackTilesCount = blackTilesCount;
             this.squares = squares;
         }
-        
+
         @Override
         public Board clone() {
             Board clone = new Board(boardSize, moveCount,
                                 whiteCapstones, blackCapstones,
                                 whiteTilesCount, blackTilesCount,
                                 getClonedSquares());
-            
+
             return clone;
         }
 
@@ -191,13 +192,13 @@ public class Game {
             }
             return clone;
         }
-        
+
         private Square getSquare(char file, int rank) {
             if(!boundsCheck(file, rank))
                 return null;
             return board.squares[rank-1][file-'A'];
         }
-        
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -209,7 +210,7 @@ public class Game {
             sb.append("\n").append(getBoardString());
             return sb.toString();
         }
-        
+
         public String getBoardString() {
             StringBuilder sb = new StringBuilder();
             for(int i=boardSize;i>0;i--){
@@ -221,20 +222,18 @@ public class Game {
             return sb.toString();
         }
     }
-    
+
     Board board;
     Stack<Board> boardHistory;
 
     static int DEFAULT_SIZE = 5;
 
-    static AtomicInteger gameNo = new AtomicInteger(0);
-    
     static final char FLAT='f';
     static final char WALL='w';
     static final char CAPSTONE='c';
 
     /**
-     * 
+     *
      * @param p1: player who accepted the Seek
      * @param p2: player who posted the seek
      * @param b: board size
@@ -243,7 +242,7 @@ public class Game {
      */
     Game(Player p1, Player p2, int b, int t, int i, Seek.COLOR clr) {
         int rand = new Random().nextInt(99);
-        
+
         if(clr == Seek.COLOR.ANY) {
             white = (rand>=50)?p1:p2;
             black = (rand>=50)?p2:p1;
@@ -251,47 +250,39 @@ public class Game {
             white = (clr == Seek.COLOR.WHITE)?p2:p1;
             black = (clr == Seek.COLOR.WHITE)?p1:p2;
         }
-        
+
         originalTime = whiteTime = blackTime = t*1000;
         incrementTime = i*1000;
-        
+
         timer = new Timer();
         timerStarted = false;
-        
+
         disconnectionTimer = null;
-        
+
         time = System.currentTimeMillis();
 
         abandoned = false;
-        
+
         board = new Board(b);
         boardHistory = new Stack<>();
-        
-        no = gameNo.incrementAndGet();
+
         gameState = gameS.NONE;
         drawOfferedBy = null;
         undoRequestedBy = null;
-        
+
         moveList = Collections.synchronizedList(new ArrayList<String>());
-        
+
         boardHistory.push(board.clone());//store empty position
         spectators = Collections.synchronizedSet(new HashSet<Player>());
+
+        insertEmpty();
     }
-    
-    public static void setGameNo() {
-        try (Statement stmt = Database.gamesConnection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM games;")) {
-            gameNo.set(rs.getInt(1));
-        } catch (SQLException ex) {
-            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-    
+
     static void addGame(Game g) {
         Game.games.put(g.no, g);
         Game.updateGameListListeners("Add "+g.shortDesc());
     }
-    
+
     static void removeGame(Game g) {
         Game.updateGameListListeners("Remove "+g.shortDesc());
         Game.games.remove(g.no);
@@ -303,7 +294,7 @@ public class Game {
         spectators.add(p);
         updateTime(p);
     }
-    
+
     void resign(Player p) {
         if(p == white)
             gameState = gameS.BLACK;
@@ -311,24 +302,24 @@ public class Game {
             gameState = gameS.WHITE;
         whenGameEnd();
     }
-    
+
     void saveBoardPosition() {
         boardHistory.push(board.clone());
     }
-    
+
     void undoPosition() {
-        boardHistory.pop();//discard cur pos        
+        boardHistory.pop();//discard cur pos
         board = boardHistory.peek().clone();//replace cur pos with top of stack
-        
+
         moveList.remove(moveList.size()-1);
     }
-    
+
     void undo(Player p) {
         if(board.moveCount <= 0) {
             p.sendNOK();
             return;
         }
-        
+
         if(undoRequestedBy == null) {
             undoRequestedBy = p;
             Player otherPlayer = (p==white)?black:white;
@@ -342,7 +333,7 @@ public class Game {
             updateTimeTurnChange();
         }
     }
-    
+
     void removeUndo(Player p) {
         if(undoRequestedBy == p) {
             undoRequestedBy = null;
@@ -350,7 +341,7 @@ public class Game {
             otherPlayer.sendWithoutLogging("Game#"+no+" RemoveUndo");
         }
     }
-    
+
     void draw(Player p) {
         if(drawOfferedBy == null) {
             drawOfferedBy = p;
@@ -361,7 +352,7 @@ public class Game {
             whenGameEnd();
         }
     }
-    
+
     void removeDraw(Player p) {
         if(drawOfferedBy == p) {
             drawOfferedBy = null;
@@ -369,22 +360,22 @@ public class Game {
             otherPlayer.sendWithoutLogging("Game#"+no+" RemoveDraw");
         }
     }
-    
+
     void unSpectate(Player p) {
         spectators.remove(p);
     }
-    
+
     static void sendGameListTo(Player p) {
         for (Integer no : Game.games.keySet()) {
             p.sendWithoutLogging("GameList Add "+Game.games.get(no).shortDesc());
         }
     }
-    
+
     void sendMoveListTo(Player p) {
         for(String move:moveList)
             p.sendWithoutLogging("Game#"+no+" "+move);
     }
-    
+
     String shortDesc(){
         StringBuilder sb=new StringBuilder("Game#"+no+" ");
         sb.append(white.getName()).append(" vs ").append(black.getName());
@@ -394,16 +385,16 @@ public class Game {
         sb.append(board.moveCount).append(" half-moves played, ").append(isWhitesTurn()?white.getName():black.getName()).append(" to move");
         return sb.toString();
     }
-    
+
     static void registerGameListListener(Player p) {
         gameListeners.add(p);
         sendGameListTo(p);
     }
-    
+
     static void unregisterGameListListener(Player p) {
         gameListeners.remove(p);
     }
-    
+
     static void updateGameListListeners(final String st) {
         new Thread() {
             @Override
@@ -414,36 +405,36 @@ public class Game {
             }
         }.start();
     }
-    
+
     @Override
     public String toString() {
         StringBuilder sb=new StringBuilder(shortDesc());
         sb.append("\n").append(board.getBoardString());
         return sb.toString();
     }
-    
+
     private boolean boundsCheck(char file, int rank) {
         int fl = file - 'A';
         int rk = rank - 1;
         return fl<board.boardSize && fl>=0 && rk<board.boardSize && rk>=0;
     }
-    
+
     private boolean isWhitesTurn() {
         return board.moveCount%2 == 0;
     }
-    
+
     private boolean turnOf(Player p) {
         boolean whiteTurn = isWhitesTurn();
         return ((p==white)==whiteTurn)||((p==black)==!whiteTurn);
     }
-    
+
     String sqState(char file, int rank) {
         Board.Square sq = board.getSquare(file, rank);
         if(sq==null)
             return "[]";
         return sq.stackString();
     }
-    
+
     void checkOutOfPieces() {
         if(gameState!=gameS.NONE)
             return;
@@ -453,33 +444,33 @@ public class Game {
             findWhoWon();
         }
     }
-    
+
     void timeCleanup() {
         white.removeGame();
         black.removeGame();
         Game.removeGame(this);
     }
-    
+
     void updateTime(Player p) {
         if(whiteTime == -1 || board.moveCount == 0)
             return;
-        
+
         long curTime = System.nanoTime();
         long elapsedMS = (curTime - lastUpdateTime)/1000000;
         long timeToCount = 0;
-        
+
         if(!isWhitesTurn()) {
             blackTime -= elapsedMS;
         } else {
             whiteTime -= elapsedMS;
         }
-        
+
         lastUpdateTime = curTime;
 
         String msg="Game#"+no+" Time "+whiteTime/1000+" "+blackTime/1000;
         p.sendWithoutLogging(msg);
     }
-    
+
     void updateTimeTurnChange() {
         if(whiteTime == -1 || gameState!=gameS.NONE)
             return;
@@ -488,11 +479,11 @@ public class Game {
             timerStarted = true;
             this.lastUpdateTime = System.nanoTime();
         }
-        
+
         long curTime = System.nanoTime();
         long elapsedMS = (curTime - lastUpdateTime)/1000000;
         long timeToCount=0;
-        
+
         if(isWhitesTurn()) {
             blackTime -= elapsedMS;
             blackTime += incrementTime;
@@ -502,11 +493,11 @@ public class Game {
             whiteTime += incrementTime;
             timeToCount = blackTime;
         }
-        
+
         lastUpdateTime = curTime;
         if(timeToCount<0)
             timeToCount = 0;
-        
+
         timer.cancel();
         timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -526,7 +517,7 @@ public class Game {
         black.sendWithoutLogging(msg);
         sendToSpectators(msg);
     }
-    
+
     Status placeMove(Player p, char file, int rank, boolean capstone,
             boolean wall) {
         //System.out.println("file = "+file+" rank="+rank+" capstone="
@@ -534,7 +525,7 @@ public class Game {
         Board.Square sq = board.getSquare(file, rank);
         if(!turnOf(p))
             return new Status("Not your turn", false);
-        
+
         if(sq!=null && sq.isEmpty()) {
             char ch;
             if(capstone)
@@ -543,20 +534,20 @@ public class Game {
                 ch = WALL;
             else
                 ch = FLAT;
-            
+
             //First move should always be a flat
             if(board.moveCount/2 == 0 && !isFlat(ch))
                 return new Status("First move should be flat", false);
-            
+
             //White places with capitals
             if(isWhitesTurn())
                 ch = (char)(ch - 'a'+'A');
-            
+
             //first moves should be played with opponent pieces
             if(board.moveCount/2 == 0)
                 ch = Character.isUpperCase(ch)?Character.toLowerCase(ch):
                         Character.toUpperCase(ch);
-            
+
             //check if enough capstones, and decrement if there are
             if(isCapstone(ch)) {
                 int caps = isWhitesTurn()?board.whiteCapstones:board.blackCapstones;
@@ -572,7 +563,7 @@ public class Game {
                 else
                     board.blackTilesCount--;
             }
-            
+
             sq.add(ch);
             board.moveCount++;
             String move="P "+file+rank+" "+(capstone?"C":"")+(wall?"W":"");
@@ -580,47 +571,47 @@ public class Game {
             saveBoardPosition();
             undoRequestedBy = null;//remove any requests on move
             sendMove(p, move.trim());
-            
+
             checkRoadWin();
             checkOutOfPieces();
             checkOutOfSquares();
             whenGameEnd();
-            
+
             updateTimeTurnChange();
             return new Status(true);
         } else {
             return new Status("Square not empty", false);
         }
     }
-    
+
     Player stackController(Board.Square sq) {
         return Character.isUpperCase(sq.topOfStack())?white:black;
     }
-    
+
     boolean isCapstone(char c) {
         return Character.toLowerCase(c) == CAPSTONE;
     }
-    
+
     boolean isWall(char c) {
         return Character.toLowerCase(c) == WALL;
     }
-    
+
     boolean isFlat(char c) {
         return Character.toLowerCase(c) == FLAT;
     }
-    
+
     boolean isBlack(char c) {
         return (c==FLAT)||(c==WALL)||(c==CAPSTONE);
     }
-    
+
     boolean isWhite(char c) {
         return c!=0 && !isBlack(c);
     }
-    
+
     static int abs(int x) {
         return x>0?x:-x;
     }
-    
+
     String getPTN() {
         String ret="";
         for(int i=0;i<board.boardSize;i++){
@@ -649,7 +640,7 @@ public class Game {
         ret+=" "+board.moveCount+" "+(isWhitesTurn()?"1":"2");
         return ret;
     }
-    
+
     Status moveMove(Player p, char f1, int r1, char f2, int r2, int[] vals) {
 //        System.out.print("moveMove "+f1+""+r1+"->"+f2+""+r2+" ");
 //        for(int i:vals)
@@ -658,37 +649,37 @@ public class Game {
         //alternate turns
         if(!turnOf(p))
             return new Status("Not your turn", false);
-        
+
         //first moves should be place moves
         if(board.moveCount/2==0)
             return new Status("First move should be place", false);
-        
+
         //moves should be horizontal or vertical
         if(f1!=f2 && r1!=r2)
             return new Status("Move should be in straight line", false);
-        
+
         Board.Square startSq = board.getSquare(f1, r1);
         Board.Square endSq = board.getSquare(f2, r2);
         //bounds checking of squares
         if(startSq == null || endSq == null)
             return new Status("Out of bounds", false);
-        
+
         //stack should be controlled by current player
         if(p != stackController(startSq))
             return new Status("You don't control stack", false);
-        
+
         //carry size should be less than or equal to boardSize and stack size
         int carrySize=0;
         for(int v:vals)
             carrySize+=v;
         if(carrySize>board.boardSize || carrySize>startSq.size())
             return new Status("Invalid move", false);
-        
+
         //length of vals should be one less than no. of squares involved
         int num = (f1==f2)?abs(r1-r2):abs(f1-f2);
         if(vals.length != num)
             return new Status("Invalid move.", false);
-        
+
         //first square should not be negative
         /*if(vals[0]<0)
             return new Status("Invalid input", false);*/
@@ -697,21 +688,21 @@ public class Game {
             if(vals[i]<1)
                 return new Status("Should place atleast one tile in rest of"
                         + " the squares", false);
-        
+
         char top = startSq.topOfStack();
         boolean capstone = isCapstone(top);
-        
+
         SquareIterator sqIt = new SquareIterator(this, f1, r1, f2, r2);
         //check if none of the intermediate places are walls or capstones
         for(Board.Square sqr=sqIt.next();sqr!=null;sqr=sqIt.next()){
             if(sqr==startSq)
                 continue;
             char ttop = sqr.topOfStack();
-            
+
             //can't stack over capstones
             if(isCapstone(ttop))
                 return new Status("Can't stack over capstones", false);
-            
+
             //can't stack over walls.. but wall in last square can be flattened
             if(isWall(ttop)) {
                 if(sqr!=endSq)
@@ -723,16 +714,16 @@ public class Game {
                 }
             }
         }
-        
+
         //do the actual moving of stack
         sqIt.reset();
         int count=-1;
         Stack<Character> moveStack = new Stack<>();
-        
+
         for(Board.Square sqr=sqIt.next();sqr!=null;
                 sqr=sqIt.next(),count++){
             assert(count<vals.length);
-            
+
             //move to temporary stack
             if(sqr==startSq){
                 for(int i=0;i<carrySize;i++)
@@ -753,7 +744,7 @@ public class Game {
             }
         }
         board.moveCount++;
-        
+
         String move = "M "+f1+r1+" "+f2+r2+" ";
         for(int val: vals)
             move+=val+" ";
@@ -761,26 +752,26 @@ public class Game {
         saveBoardPosition();
         undoRequestedBy = null;//remove any requests on move
         sendMove(p, move.trim());
-        
+
         checkRoadWin();
         checkOutOfSquares();
         whenGameEnd();
-        
+
         updateTimeTurnChange();
-        
+
         return new Status(true);
     }
-    
+
     void whenGameEnd() {
         if(gameState==gameS.NONE)
             return;
         String msg="";
         msg += gameStateString();
         timer.cancel();
-        
+
         if(disconnectionTimer != null)
             disconnectionTimer.cancel();
-        
+
         if(!abandoned)
             msg = "Game#"+no+" Over "+msg;
         else {
@@ -789,19 +780,19 @@ public class Game {
                 abandoningPlayer = black;
             else
                 abandoningPlayer = white;
-            
+
             msg = "Game#"+no+" Abandoned. "+abandoningPlayer.getName()+" quit";
         }
-        
+
         if(!(abandoned && gameState==gameS.BLACK))
             white.send(msg);
         if(!(abandoned && gameState==gameS.WHITE))
             black.send(msg);
         sendToSpectators(msg);
-        
+
         saveToDB();
     }
-    
+
     private String moveListString() {
         StringBuilder sb = new StringBuilder();
         String prefix = "";
@@ -812,7 +803,7 @@ public class Game {
         }
         return sb.toString();
     }
-    
+
     private String gameStateString() {
         switch(gameState) {
             case DRAW: return "1/2-1/2";
@@ -826,34 +817,59 @@ public class Game {
             default: return "---";
         }
     }
-    
-    void saveToDB() {
+    void insertEmpty() {
         try {
-            Statement stmt = Database.gamesConnection.createStatement();
-            String sql = "INSERT INTO games "+
-                    "VALUES (NULL,"+time+","+board.boardSize+",'"+white.getName()+"','"+black.getName()+"','"+moveListString()+"','"+
-                    gameStateString()+"','"+(originalTime/1000)+"','"+(incrementTime/1000)+"');";
-            //System.out.println("SQL:: "+sql);
-            stmt.executeUpdate(sql);
+            String sql = "INSERT INTO games (date, size, player_white, player_black, timertime, timerinc) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
+            PreparedStatement stmt = Database.gamesConnection.prepareStatement
+                (sql, Statement.RETURN_GENERATED_KEYS);
+            stmt.setLong(1, time);
+            stmt.setInt(2, board.boardSize);
+            stmt.setString(3, white.getName());
+            stmt.setString(4, black.getName());
+            stmt.setLong(5, originalTime/1000);
+            stmt.setLong(6, incrementTime/1000);
+            stmt.executeUpdate();
+            ResultSet inserted = stmt.getGeneratedKeys();
+            if (inserted.next()) {
+                no = inserted.getInt(1);
+                System.err.println("got inserted no=" + no);
+            }
             stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    void saveToDB() {
+        try {
+            String sql = "UPDATE games " +
+                "SET notation=?, result=? " +
+                "WHERE id=?";
+            PreparedStatement stmt = Database.gamesConnection.prepareStatement(sql);
+            stmt.setString(1, moveListString());
+            stmt.setString(2, gameStateString());
+            stmt.setInt(3, no);
+            stmt.executeUpdate();
+            stmt.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
     void sendMove(Player p, String move) {
         String msg="Game#"+no+" "+move;
         sendToOtherPlayer(p, msg);
         sendToSpectators(msg);
     }
-    
+
     void sendToOtherPlayer(Player p, String move) {
         if(white==p)
             black.sendWithoutLogging(move);
         else
             white.sendWithoutLogging(move);
     }
-    
+
     void sendToSpectators(final String msg) {
         new Thread() {
             @Override
@@ -895,14 +911,14 @@ public class Game {
         System.out.println("Out of squares");
         findWhoWon();
     }
-    
+
     void checkRoadWin() {
         boolean whiteWin=false, blackWin=false;
         class Graph {
             private int lf, rf, tr, br;
             private ArrayList<Board.Square> squares;
             int no;
-            
+
             Graph(int i, int j) {
                 no = i+j*board.boardSize;
                 lf=rf=tr=br=1000;
@@ -913,11 +929,11 @@ public class Game {
                if(rf==1000 || sq.file > rf) rf = sq.file;
                if(br==1000 || sq.row-1 < br) br = sq.row-1;
                if(tr==1000 || sq.row-1 > tr) tr = sq.row-1;
-               
+
                squares.add(sq);
                sq.graphNo = no;
                //System.out.println("add "+no+" "+lf+" "+rf+" "+br+" "+tr);
-               
+
                return (lf==0 && rf == board.boardSize-1) || (br==0 && tr==board.boardSize-1);
             }
             boolean merge(Graph g) {
@@ -949,20 +965,20 @@ public class Game {
         for(int i=0;i<board.boardSize;i++)
             for(int j=0;j<board.boardSize;j++)
                 graph[i+j*board.boardSize] = new Graph(i, j);
-                
+
         for(int i=0;i<board.boardSize;i++){
             for(int j=0;j<board.boardSize;j++){
                 Board.Square sq = board.getSquare((char)('A'+i), j+1);
                 sq.graphNo = -1;
-                
+
                 char ch = sq.topOfStack();
                 if(ch==0 || isWall(ch))
                     continue;
                 graph[i+j*board.boardSize].add(sq);
-                
+
                 boolean left=false;
                 boolean over=false;
-                
+
                 Board.Square lsq = board.getSquare((char)('A'+i-1), j+1);
                 //System.out.println("lsq "+lsq);
                 if(lsq!=null){
@@ -978,7 +994,7 @@ public class Game {
                     else
                         blackWin=true;
                 }
-                
+
                 Board.Square tsq = board.getSquare((char)('A'+i), j-1+1);
                 if(tsq!=null){
                     char tch = tsq.topOfStack();
@@ -1003,22 +1019,22 @@ public class Game {
             gameState = gameS.BLACK_ROAD;
         }
     }
-    
+
     Player otherPlayer(Player p) {
         return (p==white)?black:white;
     }
     void playerQuit(Player p) {
         Player otherPlayer = otherPlayer(p);
         abandoned = true;
-        
+
         p.removeGame();
         otherPlayer.removeGame();
-        
+
         gameState = (p==white)?gameS.BLACK:gameS.WHITE;
         whenGameEnd();
         Game.removeGame(this);
     }
-    
+
     void playerDisconnected(Player p) {
         Player otherPlayer = otherPlayer(p);
         if(!otherPlayer.isLoggedIn()) {
@@ -1041,53 +1057,53 @@ public class Game {
                 playerQuit(white.isLoggedIn()?black:white);
             }}, reconnectionTime*1000);
     }
-    
+
     void playerRejoin(Player p) {
         disconnectionTimer.cancel();
         disconnectionTimer = null;//Could cause race. TODO: Fix
-        
+
         Player otherPlayer = otherPlayer(p);
-        
+
         String msg = "Game Start " + no +" "+board.boardSize+" "+white.getName()+" vs "+black.getName();
         p.send(msg+" "+((white==p)?"white":"black")+" "+originalTime);
-        
+
         sendMoveListTo(p);
         updateTime(p);
         p.send("Message Your game is resumed");
-        
+
         otherPlayer.send("Message "+p.getName()+" has reconnected.");
         sendToSpectators("Message "+p.getName()+" has reconnected.");
     }
-    
+
     class SquareIterator {
         Game game;
         char f1, f2;
         int r1, r2;
-        
+
         static final int EAST = 0;
         static final int WEST = 1;
         static final int NORTH = 2;
         static final int SOUTH = 3;
-        
+
         int direction;
         int count=0;
         int total;
-        
+
         SquareIterator(Game game, char f1, int r1, char f2, int r2) {
             this.game = game;
             this.f1 = f1;
             this.r1 = r1;
             this.f2 = f2;
             this.r2 = r2;
-            
+
             assert(f1==f2 || r1 == r2);
             assert(boundsCheck(f1, r1) && boundsCheck(f2, r2));
-            
+
             if(f1==f2)
                 direction = (r2-r1)>0?NORTH:SOUTH;
             else
                 direction = (f2-f1)>0?EAST:WEST;
-            
+
             switch(direction) {
                 case EAST: total = f2-f1+1; break;
                 case WEST: total = f1-f2+1; break;
@@ -1095,13 +1111,13 @@ public class Game {
                 case SOUTH: total = r1-r2+1; break;
             }
         }
-        
+
         Board.Square next() {
             if(count >= total)
                 return null;
-            
+
             Board.Square ret = null;
-            
+
             switch(direction) {
                 case EAST: ret = game.board.getSquare((char)(f1+count), r1); break;
                 case WEST: ret = game.board.getSquare((char)(f1-count), r1); break;
@@ -1128,7 +1144,7 @@ public class Game {
                     " notation TEXT," +
                     " result VARCAR(10));"
                     );
-            
+
             stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);

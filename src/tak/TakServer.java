@@ -40,13 +40,12 @@ public class TakServer extends Thread{
         Settings.parse();
         Database.initConnection();
         Player.loadFromDB();
-        Game.setGameNo();
-        
+
         IRCBridge.init();
-        
+
         if(args.length>0)
             port = Integer.parseInt(args[0]);
-        
+
         TakServer takServer = new TakServer();
         takServer.start();
         TakServer.Log("dir: "+System.getProperty("user.dir"));
