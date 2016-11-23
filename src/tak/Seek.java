@@ -71,10 +71,11 @@ public class Seek {
     }
     
     static void updateListeners(final String st) {
+        final Set<Client> snapshot = new HashSet<Client>(seekListeners);
         new Thread() {
             @Override
             public void run() {
-                for (Client cc : seekListeners) {
+                for (Client cc : snapshot) {
                     cc.sendWithoutLogging("Seek " + st);
                 }
             }
