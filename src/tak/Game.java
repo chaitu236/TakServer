@@ -819,8 +819,8 @@ public class Game {
     }
     void insertEmpty() {
         try {
-            String sql = "INSERT INTO games (date, size, player_white, player_black, timertime, timerinc) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO games (date, size, player_white, player_black, timertime, timerinc, notation, result) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = Database.gamesConnection.prepareStatement
                 (sql, Statement.RETURN_GENERATED_KEYS);
             stmt.setLong(1, time);
@@ -829,12 +829,12 @@ public class Game {
             stmt.setString(4, black.getName());
             stmt.setLong(5, originalTime/1000);
             stmt.setLong(6, incrementTime/1000);
+            stmt.setString(7, "");
+            stmt.setString(8, "0-0");
             stmt.executeUpdate();
             ResultSet inserted = stmt.getGeneratedKeys();
-            if (inserted.next()) {
+            if (inserted.next())
                 no = inserted.getInt(1);
-                System.err.println("got inserted no=" + no);
-            }
             stmt.close();
         } catch (SQLException ex) {
             Logger.getLogger(Player.class.getName()).log(Level.SEVERE, null, ex);
