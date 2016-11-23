@@ -5,13 +5,12 @@
  */
 package tak;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import static tak.Game.DEFAULT_SIZE;
+import tak.utils.ConcurrentHashSet;
 
 /**
  *
@@ -28,8 +27,8 @@ public class Seek {
     
     static AtomicInteger seekNo = new AtomicInteger(0);
     
-    static Map<Integer, Seek> seeks = Collections.synchronizedMap(new HashMap<Integer, Seek>());
-    static Set<Client> seekListeners = Collections.synchronizedSet(new HashSet<Client>());
+    static Map<Integer, Seek> seeks = new ConcurrentHashMap<>();
+    static Set<Client> seekListeners = new ConcurrentHashSet<>();
     
     static Seek newSeek(Client c, int b, int t, int i, COLOR clr) {
         Seek sk = new Seek(c, b, t, i, clr);

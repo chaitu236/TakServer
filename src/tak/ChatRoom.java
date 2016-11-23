@@ -5,10 +5,9 @@
  */
 package tak;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import tak.utils.ConcurrentHashSet;
 
 /**
  *
@@ -22,7 +21,7 @@ public class ChatRoom {
     
     ChatRoom(String name) {
         this.name = name;
-        members = Collections.synchronizedSet(new HashSet<Client>());
+        members = new ConcurrentHashSet<Client>();
     }
     
     public static ChatRoom addRoom(String name) {

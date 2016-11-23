@@ -11,21 +11,23 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mindrot.jbcrypt.BCrypt;
+import tak.utils.ConcurrentHashSet;
 
 /**
  *
  * @author chaitu
  */
 public class Player {
-    public static HashMap<String, Player> players = new HashMap<>();
-    public static HashSet<Player> modList = new HashSet<>();
-    public static HashSet<Player> gagList = new HashSet<>();
+    public static Map<String, Player> players = new ConcurrentHashMap<>();
+    public static Set<Player> modList = new ConcurrentHashSet<>();
+    public static Set<Player> gagList = new ConcurrentHashSet<>();
     
     static int idCount=0;
     static AtomicInteger guestCount = new AtomicInteger(0);

@@ -11,8 +11,6 @@ import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -20,9 +18,10 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tak.utils.ConcurrentHashSet;
 
 /**
  *
@@ -58,8 +57,8 @@ public class Game {
     List<String> moveList;
     gameS gameState;
 
-    static Map<Integer, Game> games=Collections.synchronizedMap(new HashMap<Integer, Game>());
-    static Set<Player> gameListeners = Collections.synchronizedSet(new HashSet<Player>());
+    static Map<Integer, Game> games = new ConcurrentHashMap<>();
+    static Set<Player> gameListeners = new ConcurrentHashSet<>();
 
     public static int reconnectionTime;
 
@@ -273,7 +272,7 @@ public class Game {
         moveList = Collections.synchronizedList(new ArrayList<String>());
 
         boardHistory.push(board.clone());//store empty position
-        spectators = Collections.synchronizedSet(new HashSet<Player>());
+        spectators = new ConcurrentHashSet<>();
 
         insertEmpty();
     }

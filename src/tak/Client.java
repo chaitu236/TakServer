@@ -18,6 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import tak.utils.ConcurrentHashSet;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -39,7 +40,7 @@ public class Client extends Thread {
     static AtomicInteger totalClients = new AtomicInteger(0);
     static AtomicInteger onlineClients = new AtomicInteger(0);
 
-    static Set<Client> clientConnections = new HashSet<>();
+    static Set<Client> clientConnections = new ConcurrentHashSet<>();
 
     Seek seek = null;
     ArrayList<Game> spectating;
