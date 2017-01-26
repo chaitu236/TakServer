@@ -438,8 +438,7 @@ public class Game {
         if(gameState!=gameS.NONE)
             return;
         if((board.whiteTilesCount==0 && board.whiteCapstones==0) ||
-                (board.blackTilesCount==0 && board.blackCapstones==0)){
-            System.out.println("out of pieces.");
+                (board.blackTilesCount==0 && board.blackCapstones==0)) {
             findWhoWon();
         }
     }
@@ -1022,6 +1021,7 @@ public class Game {
     Player otherPlayer(Player p) {
         return (p==white)?black:white;
     }
+
     void playerQuit(Player p) {
         Player otherPlayer = otherPlayer(p);
         abandoned = true;

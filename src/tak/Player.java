@@ -44,7 +44,7 @@ public class Player {
     private int r7;
     private int r8;
     
-    private boolean guest;
+    private boolean guest; 
     private boolean mod = false;
     private boolean gag = false;//don't broadcast his shouts
     //variables not in database

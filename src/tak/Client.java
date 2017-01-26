@@ -228,10 +228,6 @@ public class Client extends Thread {
         Log("Connected "+socket.getInetAddress());
     }
 
-    void sendOK() {
-        sendWithoutLogging("OK");
-    }
-
     void sendNOK() {
         send("NOK");
     }
@@ -286,7 +282,7 @@ public class Client extends Thread {
 
     void clientQuit() throws IOException {
         clientConnections.remove(this);
-        
+
         if (player != null) {
             Game game = player.getGame();
             if(game!=null){
@@ -459,7 +455,6 @@ public class Client extends Thread {
                     Game game = player.getGame();
                     //List all seeks
                     if ((m = listPattern.matcher(temp)).find()) {
-                        sendOK();
                         Seek.sendListTo(this);
                     } //Seek a game
                     else if (game==null && (m = seekPattern.matcher(temp)).find()) {
@@ -481,7 +476,6 @@ public class Client extends Thread {
                                     Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)), clr);
                             Log("Seek "+seek.boardSize);
                         }
-                        sendOK();
                     } //Accept a seek
                     else if (game==null && (m = acceptSeekPattern.matcher(temp)).find()) {
                         Seek sk = Seek.seeks.get(Integer.parseInt(m.group(1)));
@@ -503,7 +497,6 @@ public class Client extends Thread {
                             player.setGame(game);
                             otherClient.player.setGame(game);
                             
-                            sendOK();
                             String msg = "Game Start " + game.no +" "+sz+" "+game.white.getName()+" vs "+game.black.getName();
                             send(msg+" "+((game.white==player)?"white":"black")+" "+time);
                             otherClient.send(msg+" "+((game.white==otherClient.player)?"white":"black")+" "+time);
@@ -515,13 +508,12 @@ public class Client extends Thread {
                     else if (game != null && (m = placePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
                         Status st = game.placeMove(player, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4) != null, m.group(5)!=null);
                         if(st.isOk()){
-                            sendOK();
-                            Client other = (game.white==player)?game.black.getClient():game.white.getClient();
-                            
+
                             if(game.gameState!=Game.gameS.NONE){
+                                Player otherPlayer = (game.white==player)?game.black:game.white;
                                 Game.removeGame(game);
                                 player.removeGame();
-                                other.player.removeGame();
+                                otherPlayer.removeGame();
                             }
                         } else {
                             sendNOK();
@@ -536,12 +528,12 @@ public class Client extends Thread {
                             argsint[i-1] = Integer.parseInt(args[i]);
                         Status st = game.moveMove(player, m.group(2).charAt(0), Integer.parseInt(m.group(3)), m.group(4).charAt(0), Integer.parseInt(m.group(5)), argsint);
                         if(st.isOk()){
-                            sendOK();
-                            Client other = (game.white==player)?game.black.getClient():game.white.getClient();
+
                             if(game.gameState!=Game.gameS.NONE){
+                                Player otherPlayer = (game.white==player)?game.black:game.white;
                                 Game.removeGame(game);
                                 player.removeGame();
-                                other.player.removeGame();
+                                otherPlayer.removeGame();
                             }
                         } else {
                             sendNOK();
@@ -559,11 +551,12 @@ public class Client extends Thread {
                     //Handle draw offer
                     else if (game!=null && (m = drawPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
                         game.draw(player);
-                        Client other = (game.white==player)?game.black.getClient():game.white.getClient();
+                        Player otherPlayer = (game.white==player)?game.black:game.white;
+
                         if(game.gameState!=Game.gameS.NONE){
                             Game.removeGame(game);
                             player.removeGame();
-                            other.player.removeGame();
+                            otherPlayer.removeGame();
                         }
                     }
                     //Handle removing draw offer
@@ -573,16 +566,14 @@ public class Client extends Thread {
                     //Handle resignation
                     else if (game!=null && (m = resignPattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
                         game.resign(player);
-                        Client other = (game.white==player)?game.black.getClient():game.white.getClient();
-                        if(game.gameState!=Game.gameS.NONE){
-                            Game.removeGame(game);
-                            player.removeGame();
-                            other.player.removeGame();
-                        }
+                        Player otherPlayer = (game.white==player)?game.black:game.white;
+                        
+                        Game.removeGame(game);
+                        player.removeGame();
+                        otherPlayer.removeGame();
                     }
                     //Show game state
                     else if (game != null && (m=gamePattern.matcher(temp)).find() && game.no == Integer.parseInt(m.group(1))) {
-                        sendOK();
                         send(game.toString());
                     }
                     //Show sq state for a game
