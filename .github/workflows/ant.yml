@@ -22,3 +22,7 @@ jobs:
         java-version: 1.8
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Package
+        path: build/jar
