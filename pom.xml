@@ -77,5 +77,15 @@
     </plugins>
 </build>
 
+<distributionManagement>
+
+    <repository>
+        <id>github</id>
+        <name>GitHub chaitu236 Apache Maven Packages</name>
+        <url>https://maven.pkg.github.com/chaitu236/TakServer</url>
+    </repository>
+
+</distributionManagement>
+
 </project>
 
