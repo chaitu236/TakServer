@@ -1,0 +1,21 @@
+<playtak.com>
+  <email>
+    <host>smtp.mailprovider.com</host>
+    <user>userid@domain.com</user>
+    <password>password</password>
+    <from>userid@domain.com</from>
+  </email>
+
+  <irc>
+    <enabled>false</enabled>
+    <server>irc.freenode.net</server>
+    <nick>nickname</nick>
+    <login>nickname</login>
+    <channel>#channel</channel>
+    <password>password</password>
+  </irc>
+
+  <game>
+    <reconnection-time>120</reconnection-time>
+  </game>
+</playtak.com>

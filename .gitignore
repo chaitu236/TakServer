@@ -1,6 +1,5 @@
 /dist/
 /nbproject/private/
 /build/
-properties*.xml
 *.DS_Store
 /store/
