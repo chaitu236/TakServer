@@ -7,7 +7,7 @@
 
 <groupId>com.playtak</groupId>
 <artifactId>TakServer</artifactId>
-<version>0.6.6</version>
+<version>0.6.8</version>
 
 <dependencies>
 
@@ -72,6 +72,8 @@
         </plugin>
 
     </plugins>
+
+    <finalName>${project.artifactId}</finalName>
 </build>
 
 <distributionManagement>
