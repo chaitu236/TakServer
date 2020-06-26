@@ -7,7 +7,7 @@
 
 <groupId>com.playtak</groupId>
 <artifactId>TakServer</artifactId>
-<version>0.5.0</version>
+<version>0.6.5</version>
 
 <dependencies>
 
