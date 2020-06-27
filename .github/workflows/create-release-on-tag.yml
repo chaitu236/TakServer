@@ -47,3 +47,8 @@ jobs:
           asset_path: ./target/TakServer-jar-with-dependencies.jar
           asset_name: TakServer-jar-with-dependencies.jar
           asset_content_type: application/java-archive
+
+      - name: Publish to GitHub Packages
+        run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
