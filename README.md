@@ -95,3 +95,5 @@ Typical communication is like below
 * If seek is accepted, server removes existing seeks for both the players (sends "Seek remove" for all) and starts game
 * Client sends moves, server validates moves and sends the move to other client. If invalid, server sends a "NOK" message.
 * Game progresses and ends either in a win/lose/draw or abandonment.
+
+NOTE: https://playtak.com is now being maintained by US Tak Association (https://ustak.org)
